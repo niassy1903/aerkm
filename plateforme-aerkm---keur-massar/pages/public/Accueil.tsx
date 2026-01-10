@@ -43,8 +43,10 @@ const Accueil: React.FC = () => {
               </div>
 
               <h1 className="text-6xl lg:text-8xl font-black text-white mb-8 leading-[0.9] tracking-tighter">
-                L'Amicale qui <span className="text-aerkm-gold italic">élève</span> ses <span className="text-aerkm-brownLight">membres</span>.
+                Ensemble, nous <span className="text-aerkm-gold italic">élevons</span> des vies et <span className="text-aerkm-brownLight">construisons</span> l’avenir.
               </h1>
+
+
               <p className="text-xl lg:text-2xl text-blue-100/80 mb-12 font-medium leading-relaxed max-w-xl">
                 Rejoignez la communauté dynamique des étudiants de Keur Massar à Bambey. Pédagogie, social et fraternité réunis.
               </p>
