@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Log from '../models/Log.js';
 import Notification from '../models/Notification.js';
-import { sendRecensementEmail } from '../utils/mailer.js';
+// import { sendRecensementEmail } from '../utils/mailer.js'; // Commenté pour désactiver l'envoi d'e-mails
 
 const router = express.Router();
 
@@ -30,7 +30,7 @@ router.post('/register', async (req, res) => {
     await new Log({ action: 'RECENSEMENT', details: `Nouvel étudiant: ${prenom} ${nom}`, adminId: 'SYSTEM' }).save();
     await new Notification({ titre: 'Nouveau recensement', message: `${prenom} ${nom} vient de s'inscrire.`, type: 'SUCCESS' }).save();
 
-    await sendRecensementEmail(newUser);
+    // await sendRecensementEmail(newUser); // Commenté pour désactiver l'envoi d'e-mails
 
     const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '24h' });
     res.status(201).json({ token, user: { id: newUser._id, email: newUser.email, role: newUser.role, prenom: newUser.prenom, nom: newUser.nom } });
