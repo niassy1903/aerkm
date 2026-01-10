@@ -61,7 +61,7 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ collapsed }) => {
                 AERKM
               </span>
               <span className="text-[10px] text-aerkm-gold font-bold uppercase tracking-[0.2em] mt-1 whitespace-nowrap">
-                Console Bureau
+                Back office
               </span>
             </div>
           )}

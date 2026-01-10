@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../context/StudentContext';
@@ -79,7 +78,19 @@ const GestionEvenements: React.FC = () => {
     resetForm();
   };
 
-  const filteredEvents = events.filter(e => 
+  const handleDeleteEvent = async (id: string) => {
+    if (!id) {
+      console.error("ID de l'événement est undefined");
+      return;
+    }
+    try {
+      await deleteEvent(id);
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'événement :", error);
+    }
+  };
+
+  const filteredEvents = events.filter(e =>
     e.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -91,7 +102,7 @@ const GestionEvenements: React.FC = () => {
           <h1 className="text-4xl font-black text-aerkm-blue tracking-tighter">Gestion Événements</h1>
           <p className="text-slate-500 font-medium mt-1 italic">Planifiez et publiez l'agenda de l'excellence.</p>
         </div>
-        <button 
+        <button
           onClick={() => handleOpenModal()}
           className="bg-aerkm-brown hover:bg-aerkm-brownLight text-white font-black py-4 px-8 rounded-2xl flex items-center justify-center space-x-3 shadow-2xl shadow-aerkm-brown/30 transition-all transform hover:scale-105 active:scale-95"
         >
@@ -103,9 +114,9 @@ const GestionEvenements: React.FC = () => {
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
         <div className="relative">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-          <input 
-            type="text" 
-            placeholder="Rechercher par titre, type..." 
+          <input
+            type="text"
+            placeholder="Rechercher par titre, type..."
             className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-aerkm-blue transition-all font-bold"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -114,23 +125,25 @@ const GestionEvenements: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        {filteredEvents.map((evt) => (
-          <div key={evt.id} className="group bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden hover:shadow-2xl transition-all duration-500 flex flex-col">
+        {filteredEvents
+          .filter(evt => evt.id || evt._id)
+          .map((evt) => (
+          <div key={evt.id || evt._id} className="group bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden hover:shadow-2xl transition-all duration-500 flex flex-col">
             <div className="relative h-56 overflow-hidden">
-              <img 
-                src={evt.imageUrl || `https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80&random=${evt.id}`} 
-                alt={evt.titre} 
+              <img
+                src={evt.imageUrl || `https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80&random=${evt.id}`}
+                alt={evt.titre}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
               />
               <div className="absolute top-5 right-5 flex space-x-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                <button 
+                <button
                   onClick={() => handleOpenModal(evt)}
                   className="p-3 bg-white text-blue-600 rounded-xl shadow-xl hover:bg-blue-600 hover:text-white transition-all"
                 >
                   <Edit2 size={18} />
                 </button>
-                <button 
-                  onClick={() => deleteEvent(evt.id)}
+                <button
+                  onClick={() => handleDeleteEvent(evt.id || evt._id)}
                   className="p-3 bg-white text-red-600 rounded-xl shadow-xl hover:bg-red-600 hover:text-white transition-all"
                 >
                   <Trash2 size={18} />
@@ -145,7 +158,7 @@ const GestionEvenements: React.FC = () => {
             <div className="p-8 flex-1 flex flex-col">
               <h3 className="text-2xl font-black text-aerkm-blue mb-3 group-hover:text-aerkm-brown transition-colors">{evt.titre}</h3>
               <p className="text-slate-500 text-sm line-clamp-2 mb-6 font-medium leading-relaxed">{evt.description}</p>
-              
+
               <div className="mt-auto space-y-3 pt-6 border-t border-slate-50">
                 <div className="flex items-center text-slate-400 font-bold text-xs uppercase tracking-wider">
                   <Calendar size={16} className="mr-3 text-aerkm-gold" />
@@ -183,14 +196,14 @@ const GestionEvenements: React.FC = () => {
                 <X size={24} />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-10 space-y-8 overflow-y-auto max-h-[75vh] custom-scrollbar">
               <div className="space-y-6">
-                
+
                 {/* Image Upload Zone */}
                 <div className="space-y-2">
                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Illustration de l'événement</label>
-                   <div 
+                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className="relative h-48 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-aerkm-blue hover:bg-aerkm-blue/5 transition-all overflow-hidden"
                    >
@@ -203,12 +216,12 @@ const GestionEvenements: React.FC = () => {
                          <span className="text-[10px] text-slate-300 mt-1 uppercase font-black">PNG, JPG ou JPEG</span>
                        </>
                      )}
-                     <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={handleImageChange} 
+                     <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageChange}
                      />
                    </div>
                 </div>
@@ -216,18 +229,18 @@ const GestionEvenements: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Titre</label>
-                    <input 
-                      type="text" required value={formData.titre} 
+                    <input
+                      type="text" required value={formData.titre}
                       onChange={e => setFormData({...formData, titre: e.target.value})}
                       className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-aerkm-blue transition-all font-bold text-slate-800"
                       placeholder="Ex: Journée Culturelle 2024"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Type d'activité</label>
-                    <select 
-                      value={formData.type} 
+                    <select
+                      value={formData.type}
                       onChange={e => setFormData({...formData, type: e.target.value})}
                       className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-aerkm-blue transition-all font-bold text-slate-800"
                     >
@@ -237,8 +250,8 @@ const GestionEvenements: React.FC = () => {
 
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Lieu</label>
-                    <input 
-                      type="text" required value={formData.lieu} 
+                    <input
+                      type="text" required value={formData.lieu}
                       onChange={e => setFormData({...formData, lieu: e.target.value})}
                       className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-aerkm-blue transition-all font-bold text-slate-800"
                       placeholder="Ex: Amphi de Bambey"
@@ -247,8 +260,8 @@ const GestionEvenements: React.FC = () => {
 
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
-                    <input 
-                      type="date" required value={formData.date} 
+                    <input
+                      type="date" required value={formData.date}
                       onChange={e => setFormData({...formData, date: e.target.value})}
                       className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-aerkm-blue transition-all font-bold text-slate-800"
                     />
@@ -256,8 +269,8 @@ const GestionEvenements: React.FC = () => {
 
                   <div className="space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Heure</label>
-                    <input 
-                      type="time" required value={formData.heure} 
+                    <input
+                      type="time" required value={formData.heure}
                       onChange={e => setFormData({...formData, heure: e.target.value})}
                       className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-aerkm-blue transition-all font-bold text-slate-800"
                     />
@@ -265,8 +278,8 @@ const GestionEvenements: React.FC = () => {
 
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Description détaillée</label>
-                    <textarea 
-                      required rows={4} value={formData.description} 
+                    <textarea
+                      required rows={4} value={formData.description}
                       onChange={e => setFormData({...formData, description: e.target.value})}
                       className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-aerkm-blue transition-all font-bold text-slate-800"
                       placeholder="Décrivez les objectifs, le programme..."
@@ -276,9 +289,9 @@ const GestionEvenements: React.FC = () => {
                   <div className="md:col-span-2 bg-slate-50 p-6 rounded-3xl border border-slate-100">
                     <label className="flex items-center space-x-4 cursor-pointer group">
                       <div className="relative">
-                        <input 
-                          type="checkbox" 
-                          checked={formData.published} 
+                        <input
+                          type="checkbox"
+                          checked={formData.published}
                           onChange={e => setFormData({...formData, published: e.target.checked})}
                           className="peer sr-only"
                         />
@@ -292,14 +305,14 @@ const GestionEvenements: React.FC = () => {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="flex-1 py-5 border-2 border-slate-100 text-slate-500 font-black rounded-2xl hover:bg-slate-50 transition-all uppercase tracking-widest text-xs"
                 >
                   Annuler
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="flex-1 py-5 bg-aerkm-blue text-white font-black rounded-2xl hover:bg-aerkm-blue/90 shadow-2xl shadow-aerkm-blue/30 transition-all transform active:scale-95 flex items-center justify-center space-x-3 uppercase tracking-widest text-xs"
                 >

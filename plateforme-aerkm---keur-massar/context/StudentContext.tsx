@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Etudiant, Evenement, User, Notification, ActivityLog } from '../types';
 
@@ -22,7 +21,7 @@ interface StudentContextType {
 }
 
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://aerkm.onrender.com/api';
 
 export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [students, setStudents] = useState<Etudiant[]>([]);
@@ -72,28 +71,47 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addEvent = async (event: any) => {
     const res = await fetch(`${API_BASE_URL}/events`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(event) });
     if (res.ok) {
-      await fetch(`${API_BASE_URL}/logs`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ action: 'EVENT_ADD', details: `Evénement créé: ${event.titre}`, adminId: 'ADMIN' }) });
+      await fetch(`${API_BASE_URL}/logs`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ action: 'EVENT_ADD', details: `Événement créé: ${event.titre}`, adminId: 'ADMIN' }) });
       fetchData();
     }
   };
 
   const updateEvent = async (event: Evenement) => {
-    const res = await fetch(`${API_BASE_URL}/events/${event._id || event.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(event) });
+    const eventId = event._id || event.id;
+    if (!eventId) {
+      console.error("ID de l'événement est undefined");
+      return;
+    }
+    const res = await fetch(`${API_BASE_URL}/events/${eventId}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(event) });
     if (res.ok) fetchData();
   };
 
   const deleteEvent = async (id: string) => {
+    if (!id) {
+      console.error("ID de l'événement est undefined");
+      return;
+    }
     const res = await fetch(`${API_BASE_URL}/events/${id}`, { method: 'DELETE', headers: getHeaders() });
     if (res.ok) fetchData();
+    else console.error("Erreur lors de la suppression de l'événement");
   };
 
   // Students
   const updateStudent = async (student: Etudiant) => {
-    const res = await fetch(`${API_BASE_URL}/students/${student._id || student.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(student) });
+    const studentId = student._id || student.id;
+    if (!studentId) {
+      console.error("ID de l'étudiant est undefined");
+      return;
+    }
+    const res = await fetch(`${API_BASE_URL}/students/${studentId}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(student) });
     if (res.ok) fetchData();
   };
 
   const deleteStudent = async (id: string) => {
+    if (!id) {
+      console.error("ID de l'étudiant est undefined");
+      return;
+    }
     const res = await fetch(`${API_BASE_URL}/students/${id}`, { method: 'DELETE', headers: getHeaders() });
     if (res.ok) fetchData();
   };
@@ -109,17 +127,30 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateAdmin = async (admin: any) => {
-    const res = await fetch(`${API_BASE_URL}/auth/admins/${admin._id || admin.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(admin) });
+    const adminId = admin._id || admin.id;
+    if (!adminId) {
+      console.error("ID de l'admin est undefined");
+      return;
+    }
+    const res = await fetch(`${API_BASE_URL}/auth/admins/${adminId}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(admin) });
     if (res.ok) fetchData();
   };
 
   const deleteAdmin = async (id: string) => {
+    if (!id) {
+      console.error("ID de l'admin est undefined");
+      return;
+    }
     const res = await fetch(`${API_BASE_URL}/auth/admins/${id}`, { method: 'DELETE', headers: getHeaders() });
     if (res.ok) fetchData();
   };
 
   // Notifs
   const markNotifAsRead = async (id: string) => {
+    if (!id) {
+      console.error("ID de la notification est undefined");
+      return;
+    }
     const res = await fetch(`${API_BASE_URL}/notifications/${id}`, { method: 'PUT', headers: getHeaders() });
     if (res.ok) fetchData();
   };
@@ -130,9 +161,9 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   return (
-    <StudentContext.Provider value={{ 
+    <StudentContext.Provider value={{
       students, events, admins, notifications, logs,
-      addEvent, updateEvent, deleteEvent, 
+      addEvent, updateEvent, deleteEvent,
       updateStudent, deleteStudent,
       addAdmin, updateAdmin, deleteAdmin,
       markNotifAsRead, clearNotifications,

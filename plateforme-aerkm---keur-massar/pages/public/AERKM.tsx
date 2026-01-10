@@ -79,7 +79,7 @@ const AERKM: React.FC = () => {
           <div className="relative group">
             <div className="absolute -top-10 -left-10 w-full h-full bg-aerkm-blue/5 rounded-[4rem] -rotate-3 group-hover:rotate-0 transition-transform duration-700"></div>
             <img 
-              src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+              src="/assets/uadb.jpeg" 
               alt="Coopération étudiante" 
               className="relative z-10 rounded-[3.5rem] shadow-3xl grayscale-[30%] hover:grayscale-0 transition-all duration-700"
             />
