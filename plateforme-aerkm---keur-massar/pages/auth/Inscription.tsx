@@ -191,30 +191,52 @@ const Inscription: React.FC = () => {
         </div>
 
         <div className="bg-white dark:bg-slate-900 shadow-[0_40px_100px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[3.5rem] overflow-hidden border border-slate-100 dark:border-slate-800 transition-colors">
-          <div className="bg-aerkm-blue p-10 text-white flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div className="p-4 bg-white/10 rounded-2xl border border-white/20 shadow-2xl">
-                <ClipboardCheck size={36} className="text-aerkm-gold" />
-              </div>
-              <div className="flex items-center gap-3">
-              <img
-                src="/assets/logo.jpg"
-                alt="Logo"
-                className="w-12 h-12 object-contain"
-              />
+         <div className="bg-aerkm-blue p-10 text-white flex items-center justify-between">
+  <div className="flex items-center space-x-6 group">
 
-              <div>
-                <h2 className="text-2xl font-black uppercase tracking-tight">
-                  Dossier de Membre
-                </h2>
-                <p className="text-blue-100/50 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
-                  Données sécurisées & cryptées
-                </p>
-              </div>
-            </div>
+    {/* LOGO DYNAMIQUE */}
+    <div
+      className="
+        relative
+        w-16 h-16
+        rounded-full
+        overflow-hidden
+        bg-white
+        border-2 border-aerkm-gold/50
+        shadow-2xl
+        transition-all duration-500 ease-out
+        group-hover:scale-110
+        group-hover:rotate-6
+        group-hover:shadow-[0_25px_60px_rgba(0,0,0,0.35)]
+        group-hover:ring-4
+        group-hover:ring-aerkm-gold/30
+      "
+    >
+      <img
+        src="/assets/logo.jpg"
+        alt="Logo AERKM"
+        className="
+          w-full h-full
+          object-cover
+          transition-transform duration-700
+          group-hover:scale-105
+        "
+      />
+    </div>
 
-            </div>
-          </div>
+    {/* TITRES */}
+    <div>
+      <h2 className="text-2xl font-black uppercase tracking-tight">
+        Dossier de Membre
+      </h2>
+      <p className="text-blue-100/50 text-[10px] font-black uppercase tracking-[0.25em] mt-1">
+        Données sécurisées & cryptées
+      </p>
+    </div>
+
+  </div>
+</div>
+
 
           <form onSubmit={handleSubmit} className="p-8 lg:p-14 space-y-16">
             
