@@ -170,7 +170,6 @@ const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* MOBILE MENU */}
      {/* MOBILE MENU */}
 {isOpen && (
   <div className="lg:hidden fixed inset-x-0 top-[5.5rem] p-4 z-[999]">
