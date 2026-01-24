@@ -1,4 +1,3 @@
-
 import express from 'express';
 const router = express.Router();
 import bcrypt from 'bcryptjs';
@@ -7,7 +6,11 @@ import crypto from 'crypto';
 import User from '../models/User.js';
 import Log from '../models/Log.js';
 import Notification from '../models/Notification.js';
-import { sendResetPasswordEmail } from '../utils/mailer.js';
+import { 
+  sendResetPasswordEmail, 
+  sendRecensementEmail, 
+  sendAdminRegistrationAlert 
+} from '../utils/mailer.js';
 
 // Recensement (Register Student)
 router.post('/register', async (req, res) => {
@@ -28,7 +31,15 @@ router.post('/register', async (req, res) => {
 
     await newUser.save();
     
-    // Journalisation & Notification
+    // 📩 Envoi des emails de notification
+    try {
+      await sendRecensementEmail(newUser);
+      await sendAdminRegistrationAlert(newUser);
+    } catch (mailErr) {
+      console.error('⚠️ Erreur lors de l\'envoi des e-mails d\'inscription:', mailErr);
+    }
+
+    // Journalisation & Notification Interne
     await new Log({ action: 'RECENSEMENT', details: `Nouvel étudiant: ${prenom} ${nom}`, adminId: 'SYSTEM' }).save();
     await new Notification({ titre: 'Nouveau recensement', message: `${prenom} ${nom} vient de s'inscrire.`, type: 'SUCCESS' }).save();
     

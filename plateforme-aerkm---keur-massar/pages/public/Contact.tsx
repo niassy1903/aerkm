@@ -23,32 +23,23 @@ const Contact: React.FC = () => {
     setStatus('IDLE');
     setErrorMessage('');
 
-    const API_URL = 'https://aerkm.onrender.com/api/contact';
-
     try {
-      console.log('📤 Envoi du formulaire de contact à:', API_URL);
-      const response = await fetch(API_URL, {
+      const response = await fetch('https://aerkm.onrender.com/api/contact', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
       if (response.ok) {
-        console.log('✅ Succès de l\'envoi');
         setStatus('SUCCESS');
         setFormData({ nom: '', email: '', sujet: '', message: '' });
       } else {
-        const data = await response.json().catch(() => ({}));
-        console.error('❌ Erreur API:', response.status, data);
-        setErrorMessage(data.message || `Erreur serveur (${response.status}). Veuillez réessayer.`);
+        const data = await response.json();
+        setErrorMessage(data.message || "Une erreur est survenue lors de l'envoi.");
         setStatus('ERROR');
       }
     } catch (err) {
-      console.error('❌ Erreur Réseau:', err);
-      setErrorMessage("Impossible de joindre le serveur. Vérifiez votre connexion internet ou réessayez plus tard.");
+      setErrorMessage("Impossible de contacter le serveur. Veuillez réessayer plus tard.");
       setStatus('ERROR');
     } finally {
       setLoading(false);
@@ -103,7 +94,7 @@ const Contact: React.FC = () => {
 
               <div className="mt-12 pt-12 border-t border-white/10 flex space-x-4 relative z-10">
                 <a 
-                  href="https://wa.me/221330000000" 
+                  href="https://wa.me/221704611894" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="flex-1 bg-green-500 hover:bg-green-600 py-3 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg"
