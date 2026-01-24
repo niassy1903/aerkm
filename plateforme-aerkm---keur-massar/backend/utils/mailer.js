@@ -18,17 +18,14 @@ const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
   secure: false, // STARTTLS
-
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD, // mot de passe d’application Gmail
+    pass: process.env.EMAIL_PASSWORD,
   },
-
   // ⏱️ TIMEOUTS (ANTI ETIMEDOUT)
-  connectionTimeout: 10000, // 10s
-  greetingTimeout: 10000,   // 10s
-  socketTimeout: 15000,     // 15s
-
+  connectionTimeout: 20000, // 20s
+  greetingTimeout: 20000,   // 20s
+  socketTimeout: 30000,     // 30s
   tls: {
     rejectUnauthorized: false,
   },
@@ -51,9 +48,9 @@ export const sendRecensementEmail = async (student) => {
     await transporter.sendMail({
       from: `"AERKM Plateforme" <${process.env.EMAIL_USER}>`,
       to: student.email,
-      subject: 'Confirmation de recensement - AERKM Bambey',
+      subject: 'Confirmation de recensement - AERKM',
       html: `
-        <h2>Bienvenue ${student.prenom}</h2>
+        <p>Bonjour ${student.prenom},</p>
         <p>Votre recensement a été enregistré avec succès.</p>
         <p><strong>Matricule :</strong> ${student.numeroRecensement}</p>
       `,
