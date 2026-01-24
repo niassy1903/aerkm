@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LogIn, Mail, Lock, AlertCircle, ArrowRight,
@@ -8,11 +7,9 @@ import {
 } from 'lucide-react';
 
 const Login: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [view, setView] = useState<'LOGIN' | 'FORGOT' | 'RESET'>('LOGIN');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -20,17 +17,6 @@ const Login: React.FC = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
-
-  // URL de l'API en production
-  const API_URL = 'https://aerkm.onrender.com/api';
-
-  // Détection du token dans l'URL
-  useEffect(() => {
-    const token = searchParams.get('token');
-    if (token) {
-      setView('RESET');
-    }
-  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,21 +41,16 @@ const Login: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess('');
     try {
-      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+      const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
-      if (res.ok) {
-        setSuccess("Un lien de réinitialisation a été envoyé à votre adresse email. Veuillez vérifier votre boîte de réception.");
-      } else {
-        const data = await res.json();
-        setError(data.message || "Cet email n'est pas reconnu.");
-      }
+      if (res.ok) setView('RESET');
+      else setError("Cet email n'est pas reconnu.");
     } catch (err) {
-      setError("Erreur de connexion au serveur.");
+      setError("Erreur de connexion.");
     } finally {
       setLoading(false);
     }
@@ -77,41 +58,25 @@ const Login: React.FC = () => {
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (newPassword !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères.");
-      return;
-    }
-
     setLoading(true);
     setError('');
-    const token = searchParams.get('token');
-
     try {
-      const res = await fetch(`${API_URL}/auth/reset-password`, {
+      const res = await fetch('http://localhost:5000/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword })
+        body: JSON.stringify({ email, newPassword })
       });
-      
       if (res.ok) {
-        setSuccess("Votre mot de passe a été réinitialisé avec succès !");
+        setSuccess("Mot de passe mis à jour !");
         setTimeout(() => {
           setView('LOGIN');
           setSuccess('');
-          navigate('/login');
-        }, 3000);
+        }, 2000);
       } else {
-        const data = await res.json();
-        setError(data.message || "Lien invalide ou expiré.");
+        setError("Erreur lors de la réinitialisation.");
       }
     } catch (err) {
-      setError("Erreur de connexion au serveur.");
+      setError("Erreur de connexion.");
     } finally {
       setLoading(false);
     }
@@ -154,27 +119,24 @@ const Login: React.FC = () => {
         </div>
 
         {/* Right Side: Dynamic Form */}
-        <div className="p-8 lg:p-16 bg-white flex flex-col justify-center min-h-[500px]">
+        <div className="p-8 lg:p-16 bg-white flex flex-col justify-center">
           <div className="mb-10 text-center">
             <h2 className="text-3xl font-black text-aerkm-blue">
-              {view === 'LOGIN' ? 'Connexion' : view === 'FORGOT' ? 'Récupération de compte' : 'Sécurité de compte'}
+              {view === 'LOGIN' ? 'Connexion' : view === 'FORGOT' ? 'Mot de passe oublié' : 'Nouveau mot de passe'}
             </h2>
-            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2">
-               {view === 'LOGIN' ? 'Espace personnel étudiant' : view === 'FORGOT' ? 'Demande de réinitialisation' : 'Mise à jour du mot de passe'}
-            </p>
           </div>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-2xl flex items-center space-x-3 border border-red-100 animate-in fade-in slide-in-from-top-2">
               <AlertCircle size={20} className="shrink-0" />
-              <p className="text-xs font-bold">{error}</p>
+              <p className="text-sm font-bold">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mb-6 p-5 bg-green-50 text-green-700 rounded-2xl flex items-center space-x-4 border border-green-100 animate-in fade-in slide-in-from-top-2">
-              <CheckCircle2 size={24} className="shrink-0 text-green-600" />
-              <p className="text-xs font-bold leading-relaxed">{success}</p>
+            <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-2xl flex items-center space-x-3 border border-green-100 animate-in fade-in slide-in-from-top-2">
+              <CheckCircle2 size={20} className="shrink-0" />
+              <p className="text-sm font-bold">{success}</p>
             </div>
           )}
 
@@ -203,7 +165,7 @@ const Login: React.FC = () => {
                   <label className="text-sm font-black text-slate-700 uppercase tracking-widest">Mot de passe</label>
                   <button
                     type="button"
-                    onClick={() => { setView('FORGOT'); setError(''); setSuccess(''); }}
+                    onClick={() => setView('FORGOT')}
                     className="text-xs font-bold text-aerkm-brown hover:underline"
                   >
                     Oublié ?
@@ -233,31 +195,20 @@ const Login: React.FC = () => {
                   <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    <span className="text-xs uppercase tracking-widest">Accéder à mon espace</span>
+                    <span>ACCÉDER À MON ESPACE</span>
                     <ArrowRight size={20} />
                   </>
                 )}
               </button>
-
-              <div className="mt-8 pt-8 border-t border-slate-50 text-center">
-                 <p className="text-slate-500 font-bold text-xs uppercase tracking-wider">
-                  Pas encore membre ?{' '}
-                  <Link to="/inscription" className="text-aerkm-brown hover:text-aerkm-brownLight underline decoration-2 underline-offset-4 font-black">
-                    Inscrivez-vous ici
-                  </Link>
-                </p>
-              </div>
             </form>
           )}
 
           {/* Forgot Password Form */}
           {view === 'FORGOT' && (
             <form onSubmit={handleForgot} className="space-y-6">
-              <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 mb-6">
-                 <p className="text-xs text-slate-600 font-bold leading-relaxed">
-                   Entrez l'adresse email utilisée lors de votre recensement. Si votre compte existe, un lien de réinitialisation vous sera envoyé.
-                 </p>
-              </div>
+              <p className="text-xs text-slate-500 font-medium mb-6">
+                Saisissez votre email pour recevoir un lien de réinitialisation.
+              </p>
               <div className="space-y-2">
                 <label className="text-sm font-black text-slate-700 uppercase tracking-widest ml-1">Email Institutionnel</label>
                 <div className="relative group">
@@ -284,7 +235,7 @@ const Login: React.FC = () => {
                   <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    <span className="text-xs uppercase tracking-widest">Envoyer le lien de récupération</span>
+                    <span>ENVoyer le lien</span>
                     <ArrowRight size={20} />
                   </>
                 )}
@@ -292,11 +243,10 @@ const Login: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => { setView('LOGIN'); setError(''); setSuccess(''); }}
-                className="w-full text-slate-400 text-[10px] font-black uppercase tracking-widest mt-4 hover:text-aerkm-blue flex items-center justify-center space-x-2"
+                onClick={() => setView('LOGIN')}
+                className="w-full text-slate-400 text-xs font-bold mt-4 hover:underline"
               >
-                <ArrowLeft size={14} />
-                <span>Retour à la connexion</span>
+                Retour à la connexion
               </button>
             </form>
           )}
@@ -304,12 +254,9 @@ const Login: React.FC = () => {
           {/* Reset Password Form */}
           {view === 'RESET' && (
             <form onSubmit={handleReset} className="space-y-6">
-              <div className="bg-aerkm-gold/10 p-5 rounded-2xl border border-aerkm-gold/20 mb-6">
-                 <p className="text-xs text-aerkm-brown font-bold leading-relaxed">
-                   Sécurité vérifiée. Veuillez définir un nouveau mot de passe fort pour protéger l'accès à votre dossier étudiant.
-                 </p>
-              </div>
-              
+              <p className="text-xs text-slate-500 font-medium mb-6">
+                Définissez votre nouveau mot de passe.
+              </p>
               <div className="space-y-2">
                 <label className="text-sm font-black text-slate-700 uppercase tracking-widest ml-1">Nouveau mot de passe</label>
                 <div className="relative group">
@@ -327,23 +274,6 @@ const Login: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-black text-slate-700 uppercase tracking-widest ml-1">Confirmer le mot de passe</label>
-                <div className="relative group">
-                  <span className="absolute inset-y-0 left-0 pl-5 flex items-center text-slate-400 group-focus-within:text-aerkm-blue transition-colors">
-                    <CheckCircle2 size={20} />
-                  </span>
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="block w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-aerkm-blue/5 focus:border-aerkm-blue transition-all outline-none font-bold text-slate-800"
-                    placeholder="Réécrire le mot de passe"
-                  />
-                </div>
-              </div>
-
               <button
                 type="submit"
                 disabled={loading}
@@ -353,20 +283,24 @@ const Login: React.FC = () => {
                   <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    <span className="text-xs uppercase tracking-widest">Sauvegarder et se connecter</span>
+                    <span>RÉINITIALISER LE MOT DE PASSE</span>
                     <ArrowRight size={20} />
                   </>
                 )}
               </button>
-
-              <button
-                type="button"
-                onClick={() => { setView('LOGIN'); setError(''); setSuccess(''); navigate('/login'); }}
-                className="w-full text-slate-400 text-[10px] font-black uppercase tracking-widest mt-4 hover:underline"
-              >
-                Annuler la réinitialisation
-              </button>
             </form>
+          )}
+
+          {/* Footer Links */}
+          {view === 'LOGIN' && (
+            <div className="mt-12 text-center space-y-4">
+              <p className="text-slate-500 font-bold">
+                Pas encore membre ?{' '}
+                <Link to="/inscription" className="text-aerkm-brown hover:text-aerkm-brownLight underline decoration-2 underline-offset-4">
+                  Inscrivez-vous ici
+                </Link>
+              </p>
+            </div>
           )}
         </div>
       </div>
