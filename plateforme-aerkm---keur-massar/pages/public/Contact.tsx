@@ -23,23 +23,32 @@ const Contact: React.FC = () => {
     setStatus('IDLE');
     setErrorMessage('');
 
+    const API_URL = 'https://aerkm.onrender.com/api/contact';
+
     try {
-      const response = await fetch('https://aerkm.onrender.com/api/contact', {
+      console.log('📤 Envoi du formulaire de contact à:', API_URL);
+      const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(formData),
       });
 
       if (response.ok) {
+        console.log('✅ Succès de l\'envoi');
         setStatus('SUCCESS');
         setFormData({ nom: '', email: '', sujet: '', message: '' });
       } else {
-        const data = await response.json();
-        setErrorMessage(data.message || "Une erreur est survenue lors de l'envoi.");
+        const data = await response.json().catch(() => ({}));
+        console.error('❌ Erreur API:', response.status, data);
+        setErrorMessage(data.message || `Erreur serveur (${response.status}). Veuillez réessayer.`);
         setStatus('ERROR');
       }
     } catch (err) {
-      setErrorMessage("Impossible de contacter le serveur. Veuillez réessayer plus tard.");
+      console.error('❌ Erreur Réseau:', err);
+      setErrorMessage("Impossible de joindre le serveur. Vérifiez votre connexion internet ou réessayez plus tard.");
       setStatus('ERROR');
     } finally {
       setLoading(false);
