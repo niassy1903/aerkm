@@ -15,9 +15,24 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+// ✅ CORS (important)
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://aerkm.netlify.app',
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
+// ✅ Gère les preflight OPTIONS
+app.options('*', cors());
+
+// ✅ Body parser
+app.use(express.json({ limit: '10mb' }));
+
+// ✅ Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/events', eventRoutes);
@@ -26,12 +41,12 @@ app.use('/api/logs', logsRoutes);
 app.use('/api/notifications', notifRoutes);
 app.use('/api/contact', contactRoutes);
 
-// ✅ MONGO ATLAS
+// ✅ MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB Atlas connecté'))
   .catch(err => console.error('❌ MongoDB Error:', err));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur AERKM démarré sur port ${PORT}`);
+  console.log(`🚀 Serveur AERKM lancé sur le port ${PORT}`);
 });
