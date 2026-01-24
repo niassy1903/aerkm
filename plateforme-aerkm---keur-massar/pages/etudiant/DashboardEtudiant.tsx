@@ -3,14 +3,14 @@ const router = express.Router();
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import User from '../models/User.js';
-import Log from '../models/Log.js';
-import Notification from '../models/Notification.js';
+import User from '../../backend/models/User.js';
+import Log from '../../backend/models/Log.js';
+import Notification from '../../backend/models/Notification.js';
 import { 
   sendResetPasswordEmail, 
   sendRecensementEmail, 
   sendAdminRegistrationAlert 
-} from '../utils/mailer.js';
+} from '../../backend/utils/mailer.js';
 
 // Recensement (Register Student)
 router.post('/register', async (req, res) => {
@@ -136,7 +136,7 @@ router.post('/forgot-password', async (req, res) => {
     // Générer un token
     const resetToken = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 heure
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 heure
     await user.save();
 
     // Lien de réinitialisation vers la production Netlify
