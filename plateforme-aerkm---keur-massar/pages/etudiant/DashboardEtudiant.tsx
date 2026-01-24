@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/StudentContext';
@@ -65,7 +64,7 @@ const DashboardEtudiant: React.FC = () => {
     // Corps du document
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(16);
-    doc.text(`Matricule : ${student.numeroRecensement}`, 20, 60);
+    doc.text(`Matricule : ${student.numeroRecensement || 'N/A'}`, 20, 60);
     
     // Ligne de séparation
     doc.setDrawColor(230, 230, 230);
@@ -78,11 +77,17 @@ const DashboardEtudiant: React.FC = () => {
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Prénom : ${student.prenom}`, 20, 90);
-    doc.text(`Nom : ${student.nom}`, 20, 98);
-    doc.text(`Sexe : ${student.sexe === 'M' ? 'Masculin' : 'Féminin'}`, 20, 106);
-    doc.text(`Lieu d'origine : ${student.lieuOrigine}`, 20, 114);
-    doc.text(`NIN : ${student.nin}`, 20, 122);
+    doc.text(`Prénom : ${student.prenom || 'N/A'}`, 20, 90);
+    doc.text(`Nom : ${student.nom || 'N/A'}`, 20, 98);
+    
+    // Correction de la logique du Sexe
+    let sexeLabel = 'Non renseigné';
+    if (student.sexe === 'M') sexeLabel = 'Masculin';
+    else if (student.sexe === 'F') sexeLabel = 'Féminin';
+    doc.text(`Sexe : ${sexeLabel}`, 20, 106);
+    
+    doc.text(`Lieu d'origine : ${student.lieuOrigine || 'Keur Massar'}`, 20, 114);
+    doc.text(`NIN : ${student.nin || 'Non renseigné'}`, 20, 122);
 
     // Informations Académiques
     doc.setFont('helvetica', 'bold');
@@ -91,10 +96,10 @@ const DashboardEtudiant: React.FC = () => {
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`UFR : ${student.ufr}`, 20, 150);
-    doc.text(`Filière : ${student.filiere}`, 20, 158);
-    doc.text(`Niveau : ${student.niveau}`, 20, 166);
-    doc.text(`Année : ${student.anneeUniversitaire}`, 20, 174);
+    doc.text(`UFR : ${student.ufr || 'Non renseignée'}`, 20, 150);
+    doc.text(`Filière : ${student.filiere || 'Non renseignée'}`, 20, 158);
+    doc.text(`Niveau : ${student.niveau || 'N/A'}`, 20, 166);
+    doc.text(`Année : ${student.anneeUniversitaire || '2024-2025'}`, 20, 174);
 
     // Contact
     doc.setFont('helvetica', 'bold');
@@ -103,9 +108,9 @@ const DashboardEtudiant: React.FC = () => {
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Téléphone : ${student.telephone}`, 20, 202);
-    doc.text(`Email : ${student.email}`, 20, 210);
-    doc.text(`Tuteur : ${student.tuteur}`, 20, 218);
+    doc.text(`Téléphone : ${student.telephone || 'Non renseigné'}`, 20, 202);
+    doc.text(`Email : ${student.email || 'N/A'}`, 20, 210);
+    doc.text(`Tuteur : ${student.tuteur || 'Non renseigné'}`, 20, 218);
     doc.text(`Logé Amicale : ${student.logementAmicale ? 'OUI' : 'NON'}`, 20, 226);
 
     // Footer du PDF
@@ -127,7 +132,7 @@ const DashboardEtudiant: React.FC = () => {
           <div className="absolute inset-0 opacity-20 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
           <div className="absolute -bottom-14 left-10 p-1.5 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl transition-colors duration-300">
             <div className="w-28 h-28 bg-slate-50 dark:bg-slate-800 text-aerkm-blue dark:text-white rounded-[1.8rem] flex items-center justify-center font-black text-4xl uppercase border-4 border-aerkm-blue/5">
-              {student.prenom[0]}{student.nom[0]}
+              {student.prenom ? student.prenom[0] : '?'}{student.nom ? student.nom[0] : '?'}
             </div>
           </div>
           <div className="absolute top-6 right-10 flex space-x-3">
@@ -147,7 +152,7 @@ const DashboardEtudiant: React.FC = () => {
                 Statut : Recensé
               </span>
               <span className="text-slate-400 dark:text-slate-500 font-bold text-xs uppercase tracking-widest">
-                MATRICULE : {student.numeroRecensement}
+                MATRICULE : {student.numeroRecensement || 'EN ATTENTE'}
               </span>
             </div>
           </div>
@@ -215,7 +220,7 @@ const DashboardEtudiant: React.FC = () => {
               {currentEvents.length > 0 ? (
                 <div className="divide-y divide-slate-50 dark:divide-slate-800">
                   {currentEvents.map((evt, idx) => (
-                    <div key={evt.id || idx} className="p-8 flex items-center hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                    <div key={evt._id || evt.id || idx} className="p-8 flex items-center hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                        <div className="hidden sm:flex flex-col items-center justify-center w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-2xl mr-8 group-hover:bg-aerkm-blue dark:group-hover:bg-aerkm-gold group-hover:text-white transition-all shrink-0">
                           <span className="text-[10px] font-black uppercase tracking-widest opacity-60 dark:text-slate-400">
                             {new Date(evt.date).toLocaleDateString('fr-FR', { month: 'short' })}
@@ -269,10 +274,10 @@ const DashboardEtudiant: React.FC = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
-                { label: 'UFR', value: student.ufr, icon: <div className="w-1.5 h-6 bg-aerkm-blue dark:bg-aerkm-gold rounded-full"></div> },
-                { label: 'Filière', value: student.filiere, icon: <div className="w-1.5 h-6 bg-aerkm-gold dark:bg-blue-400 rounded-full"></div> },
-                { label: 'Niveau', value: student.niveau, icon: <div className="w-1.5 h-6 bg-aerkm-brown dark:bg-amber-500 rounded-full"></div> },
-                { label: 'Session', value: student.anneeUniversitaire, icon: <div className="w-1.5 h-6 bg-slate-200 dark:bg-slate-700 rounded-full"></div> },
+                { label: 'UFR', value: student.ufr || 'Non renseignée', icon: <div className="w-1.5 h-6 bg-aerkm-blue dark:bg-aerkm-gold rounded-full"></div> },
+                { label: 'Filière', value: student.filiere || 'Non renseignée', icon: <div className="w-1.5 h-6 bg-aerkm-gold dark:bg-blue-400 rounded-full"></div> },
+                { label: 'Niveau', value: student.niveau || 'N/A', icon: <div className="w-1.5 h-6 bg-aerkm-brown dark:bg-amber-500 rounded-full"></div> },
+                { label: 'Session', value: student.anneeUniversitaire || '2024-2025', icon: <div className="w-1.5 h-6 bg-slate-200 dark:bg-slate-700 rounded-full"></div> },
               ].map((item, i) => (
                 <div key={i} className="p-6 bg-slate-50 dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700 flex items-center space-x-6 hover:bg-white dark:hover:bg-slate-700 hover:shadow-xl transition-all cursor-default">
                   {item.icon}
@@ -330,11 +335,11 @@ const DashboardEtudiant: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                    <span className="text-xs font-bold text-slate-500">Sexe</span>
-                   <span className="text-xs font-black text-slate-800 dark:text-slate-200">{student.sexe === 'M' ? 'Masculin' : 'Féminin'}</span>
+                   <span className="text-xs font-black text-slate-800 dark:text-slate-200">{student.sexe === 'M' ? 'Masculin' : (student.sexe === 'F' ? 'Féminin' : 'N/A')}</span>
                 </div>
                 <div className="flex items-center justify-between">
                    <span className="text-xs font-bold text-slate-500">Ville</span>
-                   <span className="text-xs font-black text-slate-800 dark:text-slate-200">{student.lieuOrigine}</span>
+                   <span className="text-xs font-black text-slate-800 dark:text-slate-200">{student.lieuOrigine || 'N/A'}</span>
                 </div>
                 <hr className="border-slate-50 dark:border-slate-800" />
                 <div className="pt-2">
