@@ -94,7 +94,7 @@ const Contact: React.FC = () => {
 
               <div className="mt-12 pt-12 border-t border-white/10 flex space-x-4 relative z-10">
                 <a 
-                  href="https://wa.me/221704611894" 
+                  href="https://wa.me/221330000000" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="flex-1 bg-green-500 hover:bg-green-600 py-3 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg"

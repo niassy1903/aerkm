@@ -21,6 +21,9 @@ const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // URL de l'API en production
+  const API_URL = 'https://aerkm.onrender.com/api';
+
   // Détection du token dans l'URL
   useEffect(() => {
     const token = searchParams.get('token');
@@ -54,7 +57,7 @@ const Login: React.FC = () => {
     setError('');
     setSuccess('');
     try {
-      const res = await fetch('https://aerkm.onrender.com/api/auth/forgot-password', {
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -90,7 +93,7 @@ const Login: React.FC = () => {
     const token = searchParams.get('token');
 
     try {
-      const res = await fetch('https://aerkm.onrender.com/api/auth/reset-password', {
+      const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword })

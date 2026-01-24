@@ -117,8 +117,9 @@ router.post('/forgot-password', async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 heure
     await user.save();
 
-    // Lien de réinitialisation (en utilisant le port client standard 5173 ou le domaine de l'app)
-    const resetUrl = `https://aerkm.netlify.app/#/login?token=${resetToken}`;
+    // Lien de réinitialisation vers la production Netlify
+    const frontendUrl = 'https://aerkm.netlify.app';
+    const resetUrl = `${frontendUrl}/#/login?token=${resetToken}`;
     
     const sent = await sendResetPasswordEmail(user.email, resetUrl);
 
