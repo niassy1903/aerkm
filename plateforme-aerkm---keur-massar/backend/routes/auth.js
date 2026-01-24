@@ -130,7 +130,7 @@ router.post('/forgot-password', async (req, res) => {
 
     // Lien de réinitialisation vers la production Netlify
     const frontendUrl = 'https://aerkm.netlify.app';
-    const resetUrl = `${frontendUrl}/login?token=${resetToken}`;
+    const resetUrl = `${frontendUrl}/#/login?token=${resetToken}`;
     
     const sent = await sendResetPasswordEmail(user.email, resetUrl);
 
