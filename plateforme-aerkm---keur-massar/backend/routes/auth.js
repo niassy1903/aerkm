@@ -44,7 +44,12 @@ router.post('/register', async (req, res) => {
     await new Notification({ titre: 'Nouveau recensement', message: `${prenom} ${nom} vient de s'inscrire.`, type: 'SUCCESS' }).save();
     
     const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '24h' });
-    res.status(201).json({ token, user: { id: newUser._id, email: newUser.email, role: newUser.role, prenom: newUser.prenom, nom: newUser.nom } });
+    
+    // Renvoyer l'utilisateur complet sans le password
+    const userResponse = newUser.toObject();
+    delete userResponse.password;
+    
+    res.status(201).json({ token, user: userResponse });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -110,8 +115,14 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(400).json({ message: 'Identifiants invalides' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Identifiants invalides' });
+    
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '24h' });
-    res.json({ token, user: { id: user._id, email: user.email, role: user.role, prenom: user.prenom, nom: user.nom } });
+    
+    // Renvoyer l'utilisateur complet sans le password
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    
+    res.json({ token, user: userResponse });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
