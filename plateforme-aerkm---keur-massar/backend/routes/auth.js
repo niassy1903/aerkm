@@ -112,16 +112,6 @@ router.post('/register', async (req, res) => {
 });
 
 
-// Gestion Admins - Liste
-router.get('/admins', async (req, res) => {
-  try {
-    const admins = await User.find({ role: 'ADMIN' }).select('-password');
-    res.json(admins);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
 // Gestion Admins - Ajouter
 router.post('/admins', async (req, res) => {
   try {
@@ -172,14 +162,8 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(400).json({ message: 'Identifiants invalides' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Identifiants invalides' });
-    
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '24h' });
-    
-    // Renvoyer l'utilisateur complet sans le password
-    const userResponse = user.toObject();
-    delete userResponse.password;
-    
-    res.json({ token, user: userResponse });
+    res.json({ token, user: { id: user._id, email: user.email, role: user.role, prenom: user.prenom, nom: user.nom } });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
