@@ -15,45 +15,102 @@ import {
 // Recensement (Register Student)
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, prenom, nom } = req.body;
-    let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ message: 'Email déjà utilisé' });
+    const {
+      email,
+      password,
+      prenom,
+      nom,
+      sexe,
+      dateNaissance,
+      lieuOrigine,
+      ufr,
+      filiere,
+      niveau,
+      anneeUniversitaire,
+      telephone,
+      nin,
+      tuteur,
+      maladieHandicap,
+      typeMaladieHandicap,
+      logementAmicale
+    } = req.body;
+
+    // 🔒 Validation minimale
+    if (!email || !prenom || !nom || !ufr || !filiere || !niveau) {
+      return res.status(400).json({
+        message: "Dossier étudiant incomplet"
+      });
+    }
+
+    const userExist = await User.findOne({ email });
+    if (userExist) {
+      return res.status(400).json({ message: "Email déjà utilisé" });
+    }
 
     const hashedPassword = await bcrypt.hash(password || 'aerkm2024', 10);
-    const numRecensement = `KM-${Math.floor(1000 + Math.random() * 9000)}-${new Date().getFullYear()}`;
+    const numeroRecensement = `KM-${Math.floor(1000 + Math.random() * 9000)}-${new Date().getFullYear()}`;
 
     const newUser = new User({
-      ...req.body,
+      email,
       password: hashedPassword,
-      numeroRecensement: numRecensement,
+      prenom,
+      nom,
+      sexe,
+      dateNaissance,
+      lieuOrigine: lieuOrigine || 'Keur Massar',
+      ufr,
+      filiere,
+      niveau,
+      anneeUniversitaire: anneeUniversitaire || '2024-2025',
+      telephone,
+      nin,
+      tuteur,
+      maladieHandicap: maladieHandicap || false,
+      typeMaladieHandicap,
+      logementAmicale: logementAmicale || false,
+      numeroRecensement,
       role: 'ETUDIANT'
     });
 
     await newUser.save();
-    
-    // 📩 Envoi des emails de notification
+
+    // 📩 Emails
     try {
       await sendRecensementEmail(newUser);
       await sendAdminRegistrationAlert(newUser);
-    } catch (mailErr) {
-      console.error('⚠️ Erreur lors de l\'envoi des e-mails d\'inscription:', mailErr);
+    } catch (e) {
+      console.warn('⚠️ Email non envoyé');
     }
 
-    // Journalisation & Notification Interne
-    await new Log({ action: 'RECENSEMENT', details: `Nouvel étudiant: ${prenom} ${nom}`, adminId: 'SYSTEM' }).save();
-    await new Notification({ titre: 'Nouveau recensement', message: `${prenom} ${nom} vient de s'inscrire.`, type: 'SUCCESS' }).save();
-    
-    const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '24h' });
-    
-    // Renvoyer l'utilisateur complet sans le password
+    await new Log({
+      action: 'RECENSEMENT',
+      details: `Nouvel étudiant : ${prenom} ${nom}`,
+      adminId: 'SYSTEM'
+    }).save();
+
+    await new Notification({
+      titre: 'Nouveau recensement',
+      message: `${prenom} ${nom} vient de s'inscrire.`,
+      type: 'SUCCESS'
+    }).save();
+
+    const token = jwt.sign(
+      { id: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
     const userResponse = newUser.toObject();
     delete userResponse.password;
-    
+
     res.status(201).json({ token, user: userResponse });
+
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 // Gestion Admins - Liste
 router.get('/admins', async (req, res) => {
