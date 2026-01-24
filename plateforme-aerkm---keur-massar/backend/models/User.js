@@ -6,8 +6,12 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['ADMIN', 'ETUDIANT'], default: 'ETUDIANT' },
   nom: { type: String, required: true },
   prenom: { type: String, required: true },
+  
+  // Champs pour la réinitialisation
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
 
-  // Champs étudiants (optionnels pour l'admin)
+  // Champs spécifiques aux étudiants (optionnels pour l'admin)
   sexe: { type: String, enum: ['M', 'F'] },
   dateNaissance: { type: Date },
   lieuOrigine: { type: String, default: 'Keur Massar' },
@@ -25,4 +29,5 @@ const userSchema = new mongoose.Schema({
   dateInscription: { type: Date, default: Date.now }
 });
 
-export default mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+export default User;
