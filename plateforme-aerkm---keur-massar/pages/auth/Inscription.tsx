@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/StudentContext';
 import { ACADEMIC_STRUCTURE, UFR_LIST, NIVEAUX } from '../../constants';
 import { 
   ClipboardCheck, 
@@ -20,22 +21,23 @@ import {
   Calendar,
   RefreshCw,
   ShieldCheck,
-  BotOff
+  BotOff,
+  Lock,
+  Loader2
 } from 'lucide-react';
 
 const Inscription: React.FC = () => {
   const { registerStudent } = useAuth();
+  const { settings } = useData();
   const navigate = useNavigate();
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // CAPTCHA State
   const [captcha, setCaptcha] = useState({ question: '', answer: 0 });
   const [userCaptcha, setUserCaptcha] = useState('');
   const [captchaError, setCaptchaError] = useState('');
 
-  // Calcul de la date maximum autorisée (Aujourd'hui - 18 ans)
   const today = new Date();
   const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
   const maxDateString = maxDate.toISOString().split('T')[0];
@@ -49,7 +51,7 @@ const Inscription: React.FC = () => {
     ufr: UFR_LIST[0],
     filiere: ACADEMIC_STRUCTURE[UFR_LIST[0] as keyof typeof ACADEMIC_STRUCTURE][0],
     niveau: NIVEAUX[0],
-    anneeUniversitaire: '2024-2025',
+    anneeUniversitaire: settings?.academicYear || '2024-2025',
     telephone: '',
     email: '',
     nin: '',
@@ -72,7 +74,6 @@ const Inscription: React.FC = () => {
       question = `${num1} + ${num2}`;
       answer = num1 + num2;
     } else {
-      // Pour éviter les résultats négatifs
       const n1 = Math.max(num1, num2);
       const n2 = Math.min(num1, num2);
       question = `${n1} - ${n2}`;
@@ -93,6 +94,13 @@ const Inscription: React.FC = () => {
     setFormData(prev => ({ ...prev, filiere: defaultFiliere }));
   }, [formData.ufr]);
 
+  // Synchronisation de l'année universitaire avec les réglages
+  useEffect(() => {
+    if (settings) {
+      setFormData(prev => ({ ...prev, anneeUniversitaire: settings.academicYear }));
+    }
+  }, [settings]);
+
   const validateField = (name: string, value: any) => {
     let error = '';
     if (name === 'nin') {
@@ -103,16 +111,6 @@ const Inscription: React.FC = () => {
     }
     if (name === 'email') {
       if (!/\S+@\S+\.\S+/.test(value)) error = 'Format email invalide.';
-    }
-    if (name === 'dateNaissance' && value) {
-      const birthDate = new Date(value);
-      const ageLimitDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-      if (birthDate > ageLimitDate) {
-        error = 'Âge minimum requis : 18 ans pour être recensé.';
-      }
-    }
-    if (name === 'typeMaladieHandicap' && formData.maladieHandicap && value.trim() === '') {
-      error = 'Veuillez préciser la nature de votre situation.';
     }
     setErrors(prev => ({ ...prev, [name]: error }));
   };
@@ -134,29 +132,18 @@ const Inscription: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (settings && !settings.registrationOpen) return;
+
     const newErrors: Record<string, string> = {};
     
     ['nom', 'prenom', 'email', 'telephone', 'nin', 'tuteur', 'dateNaissance'].forEach(key => {
       if (!(formData as any)[key].toString().trim()) newErrors[key] = 'Obligatoire';
     });
 
-    // Validation CAPTCHA
     if (parseInt(userCaptcha) !== captcha.answer) {
       setCaptchaError('Réponse incorrecte. Veuillez réessayer.');
       generateCaptcha();
       return;
-    }
-
-    // Re-valider l'âge au submit
-    if (formData.dateNaissance) {
-      const birthDate = new Date(formData.dateNaissance);
-      if (birthDate > new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())) {
-        newErrors.dateNaissance = 'Âge insuffisant (min. 18 ans)';
-      }
-    }
-
-    if (formData.maladieHandicap && !formData.typeMaladieHandicap.trim()) {
-      newErrors.typeMaladieHandicap = 'Obligatoire si déclaré';
     }
 
     if (Object.values(errors).some(e => e !== '') || Object.keys(newErrors).length > 0) {
@@ -183,12 +170,29 @@ const Inscription: React.FC = () => {
     rounded-2xl outline-none transition-all duration-300
     placeholder:text-slate-300 dark:placeholder:text-slate-600
     font-bold text-slate-700 dark:text-slate-200
-    shadow-[0_2px_10px_rgba(0,0,0,0.02)]
-    focus:shadow-[0_10px_25px_rgba(30,58,138,0.08)]
     focus:border-aerkm-blue dark:focus:border-aerkm-gold
-    focus:ring-4 focus:ring-aerkm-blue/5 dark:focus:ring-aerkm-gold/5
-    ${hasError ? 'border-red-400 ring-4 ring-red-50' : ''}
+    ${hasError ? 'border-red-400' : ''}
   `;
+
+  // Écran de fermeture des inscriptions
+  if (settings && !settings.registrationOpen) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6">
+        <div className="max-w-lg w-full bg-white dark:bg-slate-900 p-12 rounded-[3.5rem] shadow-3xl text-center border border-slate-100 dark:border-slate-800 animate-in zoom-in duration-500">
+          <div className="w-24 h-24 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8">
+            <Lock size={48} />
+          </div>
+          <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter uppercase">Inscriptions Closes</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-10 leading-relaxed font-medium">
+            Le portail de recensement pour la session {settings.academicYear} est actuellement fermé par le bureau exécutif de l'AERKM.
+          </p>
+          <Link to="/" className="inline-block px-10 py-5 bg-aerkm-blue text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-800 transition-all shadow-xl shadow-aerkm-blue/20">
+            Retour à l'accueil
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -199,11 +203,6 @@ const Inscription: React.FC = () => {
           </div>
           <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">Recensement Validé !</h2>
           <p className="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed font-medium">Vos informations ont été transmises avec succès. Bienvenue dans la communauté.</p>
-          <div className="flex space-x-2 justify-center">
-            <div className="w-2 h-2 bg-aerkm-blue dark:bg-aerkm-gold rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-aerkm-blue dark:bg-aerkm-gold rounded-full animate-bounce delay-100"></div>
-            <div className="w-2 h-2 bg-aerkm-blue dark:bg-aerkm-gold rounded-full animate-bounce delay-200"></div>
-          </div>
         </div>
       </div>
     );
@@ -211,11 +210,6 @@ const Inscription: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors duration-500">
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-40">
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-aerkm-blue/5 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-aerkm-brown/5 rounded-full blur-[80px]"></div>
-      </div>
-
       <div className="max-w-4xl mx-auto relative z-10">
         <div className="mb-10 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2 text-aerkm-blue dark:text-white font-black text-[10px] uppercase tracking-[0.2em] group">
@@ -226,19 +220,19 @@ const Inscription: React.FC = () => {
           </Link>
           <div className="hidden sm:flex items-center space-x-2 bg-aerkm-gold/10 px-4 py-2 rounded-xl text-aerkm-brown dark:text-aerkm-gold text-[9px] font-black uppercase tracking-widest border border-aerkm-gold/20">
             <Activity size={14} />
-            <span>Session 2024-2025</span>
+            <span>Session {settings?.academicYear || '2024-2025'}</span>
           </div>
         </div>
 
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Formulaire de Recensement</h1>
+          <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Recensement Étudiant</h1>
           <p className="mt-4 text-slate-400 font-bold uppercase text-[9px] tracking-[0.4em]">Amicale des Étudiants de Keur Massar à Bambey</p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 shadow-[0_40px_100px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[3.5rem] overflow-hidden border border-slate-100 dark:border-slate-800 transition-colors">
           <div className="bg-aerkm-blue p-10 text-white flex items-center justify-between">
             <div className="flex items-center space-x-6 group">
-              <div className="relative w-16 h-16 rounded-full overflow-hidden bg-white border-2 border-aerkm-gold/50 shadow-2xl transition-all duration-500 ease-out group-hover:scale-110 group-hover:rotate-6">
+              <div className="relative w-16 h-16 rounded-full overflow-hidden bg-white border-2 border-aerkm-gold/50 shadow-2xl transition-all">
                 <img src="/assets/logo.jpg" alt="Logo AERKM" className="w-full h-full object-cover" />
               </div>
               <div>
@@ -249,13 +243,10 @@ const Inscription: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 lg:p-14 space-y-16">
-            
-            {/* 1. Identité */}
+            {/* Section Identité */}
             <section className="space-y-10">
               <div className="flex items-center space-x-4 border-b border-slate-50 dark:border-slate-800 pb-4">
-                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-aerkm-brown">
-                  <User size={18} />
-                </div>
+                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-aerkm-brown"><User size={18} /></div>
                 <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400">Identité & NIN</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -270,47 +261,31 @@ const Inscription: React.FC = () => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Numéro NIN</label>
                   <div className="relative group">
-                    <Fingerprint className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 transition-colors group-focus-within:text-aerkm-blue dark:group-focus-within:text-aerkm-gold" size={18} />
+                    <Fingerprint className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
                     <input name="nin" required value={formData.nin} onChange={handleChange} placeholder="13 à 15 chiffres" className={`${inputClasses(!!errors.nin)} pl-14`} />
                   </div>
-                  {errors.nin && <p className="text-[9px] text-red-500 font-bold uppercase ml-2 mt-1">{errors.nin}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Date de Naissance (Min. 18 ans)</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Date de Naissance</label>
                   <div className="relative group">
-                    <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 transition-colors group-focus-within:text-aerkm-blue dark:group-focus-within:text-aerkm-gold" size={18} />
+                    <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
                     <input type="date" name="dateNaissance" required max={maxDateString} value={formData.dateNaissance} onChange={handleChange} className={`${inputClasses(!!errors.dateNaissance)} pl-14`} />
                   </div>
-                  {errors.dateNaissance && <p className="text-[9px] text-red-500 font-bold uppercase ml-2 mt-1">{errors.dateNaissance}</p>}
                 </div>
               </div>
             </section>
 
-            {/* 2. Cursus */}
+            {/* Section Cursus */}
             <section className="space-y-10">
               <div className="flex items-center space-x-4 border-b border-slate-50 dark:border-slate-800 pb-4">
-                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-aerkm-gold">
-                  <School size={18} />
-                </div>
+                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-aerkm-gold"><School size={18} /></div>
                 <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400">Cursus Universitaire</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">UFR</label>
-                  <select name="ufr" value={formData.ufr} onChange={handleChange} className={`${inputClasses(false)} appearance-none cursor-pointer`}>
+                  <select name="ufr" value={formData.ufr} onChange={handleChange} className={inputClasses(false)}>
                     {UFR_LIST.map(u => <option key={u} value={u}>{u}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Filière</label>
-                  <select name="filiere" value={formData.filiere} onChange={handleChange} className={`${inputClasses(false)} appearance-none cursor-pointer`}>
-                    {ACADEMIC_STRUCTURE[formData.ufr as keyof typeof ACADEMIC_STRUCTURE].map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Niveau d'étude</label>
-                  <select name="niveau" value={formData.niveau} onChange={handleChange} className={`${inputClasses(false)} appearance-none cursor-pointer`}>
-                    {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -323,107 +298,62 @@ const Inscription: React.FC = () => {
               </div>
             </section>
 
-            {/* 3. Santé & Logement */}
-            <section className="space-y-10 bg-slate-50 dark:bg-slate-800/30 p-8 lg:p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800/50 transition-colors">
+            {/* Section Sociale */}
+            <section className="space-y-10 bg-slate-50 dark:bg-slate-800/30 p-8 lg:p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800/50">
               <div className="flex items-center space-x-4 border-b border-white dark:border-slate-800 pb-4">
-                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-red-500">
-                  <Activity size={18} />
-                </div>
+                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-red-500"><Activity size={18} /></div>
                 <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400">Social & Santé</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-4">
                   <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-2">Pathologie ou Handicap ?</label>
                   <div className="flex p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 w-fit">
-                    <button type="button" onClick={() => handleToggle('maladieHandicap', true)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${formData.maladieHandicap ? 'bg-red-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>OUI</button>
-                    <button type="button" onClick={() => handleToggle('maladieHandicap', false)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${!formData.maladieHandicap ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400' : 'text-slate-400 hover:text-slate-600'}`}>NON</button>
+                    <button type="button" onClick={() => handleToggle('maladieHandicap', true)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${formData.maladieHandicap ? 'bg-red-500 text-white' : 'text-slate-400'}`}>OUI</button>
+                    <button type="button" onClick={() => handleToggle('maladieHandicap', false)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${!formData.maladieHandicap ? 'bg-slate-100 dark:bg-slate-800' : 'text-slate-400'}`}>NON</button>
                   </div>
-                  {formData.maladieHandicap && (
-                    <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                      <div className="relative group">
-                        <Stethoscope className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
-                        <input name="typeMaladieHandicap" required value={formData.typeMaladieHandicap} onChange={handleChange} placeholder="Précisez la nature..." className={`${inputClasses(!!errors.typeMaladieHandicap)} pl-14 bg-white dark:bg-slate-900`} />
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <div className="space-y-4">
                   <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-2">Logement de l'Amicale ?</label>
                   <div className="flex p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 w-fit">
-                    <button type="button" onClick={() => handleToggle('logementAmicale', true)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${formData.logementAmicale ? 'bg-aerkm-blue dark:bg-aerkm-gold text-white dark:text-slate-900 shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>OUI</button>
-                    <button type="button" onClick={() => handleToggle('logementAmicale', false)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${!formData.logementAmicale ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400' : 'text-slate-400 hover:text-slate-600'}`}>NON</button>
+                    <button type="button" onClick={() => handleToggle('logementAmicale', true)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${formData.logementAmicale ? 'bg-aerkm-blue text-white' : 'text-slate-400'}`}>OUI</button>
+                    <button type="button" onClick={() => handleToggle('logementAmicale', false)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${!formData.logementAmicale ? 'bg-slate-100 dark:bg-slate-800' : 'text-slate-400'}`}>NON</button>
                   </div>
-                  <p className="text-[9px] text-slate-400 font-bold italic flex items-center ml-2"><Home size={10} className="mr-1.5" />Appartements loués officiellement par l'AERKM.</p>
                 </div>
               </div>
             </section>
 
-            {/* 4. Contact & Tuteur */}
+            {/* Section Contact */}
             <section className="space-y-10">
               <div className="flex items-center space-x-4 border-b border-slate-50 dark:border-slate-800 pb-4">
-                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-aerkm-blue dark:text-white">
-                  <Users size={18} />
-                </div>
+                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-aerkm-blue dark:text-white"><Users size={18} /></div>
                 <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400">Contacts & Tuteur</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Responsable / Tuteur (Nom Complet)</label>
-                  <input name="tuteur" required value={formData.tuteur} onChange={handleChange} placeholder="Personne à contacter en cas d'urgence" className={inputClasses(false)} />
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Tuteur (Nom Complet)</label>
+                  <input name="tuteur" required value={formData.tuteur} onChange={handleChange} className={inputClasses(false)} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Téléphone (WhatsApp)</label>
-                  <div className="relative group">
-                    <Phone className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 transition-colors group-focus-within:text-aerkm-blue dark:group-focus-within:text-aerkm-gold" size={18} />
-                    <input name="telephone" required value={formData.telephone} onChange={handleChange} placeholder="Ex: 77 123 45 67" className={`${inputClasses(!!errors.telephone)} pl-14`} />
-                  </div>
-                  {errors.telephone && <p className="text-[9px] text-red-500 font-bold uppercase ml-2 mt-1">{errors.telephone}</p>}
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Téléphone WhatsApp</label>
+                  <input name="telephone" required value={formData.telephone} onChange={handleChange} className={inputClasses(!!errors.telephone)} />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Email Personnel</label>
-                  <div className="relative group">
-                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 transition-colors group-focus-within:text-aerkm-blue dark:group-focus-within:text-aerkm-gold" size={18} />
-                    <input type="email" name="email" required value={formData.email} onChange={handleChange} placeholder="exemple@email.com" className={`${inputClasses(!!errors.email)} pl-14`} />
-                  </div>
-                  {errors.email && <p className="text-[9px] text-red-500 font-bold uppercase ml-2 mt-1">{errors.email}</p>}
+                  <input type="email" name="email" required value={formData.email} onChange={handleChange} className={inputClasses(!!errors.email)} />
                 </div>
               </div>
             </section>
 
-            {/* 5. Anti-Bot CAPTCHA Section */}
+            {/* Captcha */}
             <section className="space-y-10">
-              <div className="flex items-center space-x-4 border-b border-slate-50 dark:border-slate-800 pb-4">
-                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-aerkm-gold">
-                  <ShieldCheck size={18} />
-                </div>
-                <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400">Vérification de sécurité</h3>
-              </div>
-              
               <div className="bg-slate-50 dark:bg-slate-800/50 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 flex flex-col md:flex-row items-center justify-between gap-8">
-                <div className="flex items-center space-x-6">
-                  <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Calculer</span>
-                    <span className="text-2xl font-black text-aerkm-blue dark:text-aerkm-gold">{captcha.question} = ?</span>
-                  </div>
-                  <button type="button" onClick={generateCaptcha} className="p-3 bg-white dark:bg-slate-900 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 transition-all border border-slate-100 dark:border-slate-700 group">
-                    <RefreshCw size={20} className="group-active:rotate-180 transition-transform duration-500" />
-                  </button>
+                <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col items-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Calculer</span>
+                  <span className="text-2xl font-black text-aerkm-blue dark:text-aerkm-gold">{captcha.question} = ?</span>
                 </div>
-
                 <div className="flex-1 w-full max-w-xs space-y-2">
-                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Résultat du calcul</label>
-                   <div className="relative group">
-                     <BotOff className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
-                     <input 
-                       type="number" 
-                       required 
-                       value={userCaptcha} 
-                       onChange={e => setUserCaptcha(e.target.value)} 
-                       placeholder="Réponse" 
-                       className={`${inputClasses(!!captchaError)} pl-14 bg-white dark:bg-slate-900`} 
-                     />
-                   </div>
-                   {captchaError && <p className="text-[9px] text-red-500 font-bold uppercase ml-2 mt-1">{captchaError}</p>}
+                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Résultat</label>
+                   <input type="number" required value={userCaptcha} onChange={e => setUserCaptcha(e.target.value)} className={inputClasses(!!captchaError)} />
                 </div>
               </div>
             </section>
@@ -432,20 +362,10 @@ const Inscription: React.FC = () => {
               <button 
                 type="submit" 
                 disabled={loading} 
-                className="w-full bg-aerkm-brown hover:bg-aerkm-brownLight text-white font-black py-7 px-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(120,53,15,0.25)] transition-all transform hover:scale-[1.01] active:scale-95 flex items-center justify-center space-x-4 uppercase tracking-[0.2em] text-xs disabled:opacity-50 disabled:pointer-events-none"
+                className="w-full bg-aerkm-brown hover:bg-aerkm-brownLight text-white font-black py-7 px-10 rounded-[2.5rem] shadow-2xl transition-all transform active:scale-95 flex items-center justify-center space-x-4 uppercase tracking-[0.2em] text-xs disabled:opacity-50"
               >
-                {loading ? (
-                  <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <ClipboardCheck size={24} />
-                    <span>SOUMETTRE MON RECENSEMENT</span>
-                  </>
-                )}
+                {loading ? <Loader2 className="animate-spin" size={24} /> : <><ClipboardCheck size={24} /><span>VALIDER MON RECENSEMENT</span></>}
               </button>
-              <p className="text-center mt-6 text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                En cliquant sur soumettre, vous certifiez l'exactitude des informations fournies.
-              </p>
             </div>
           </form>
         </div>

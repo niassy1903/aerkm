@@ -10,6 +10,7 @@ import statsRoutes from './routes/stats.js';
 import logsRoutes from './routes/logs.js';
 import notifRoutes from './routes/notifications.js';
 import contactRoutes from './routes/contact.js';
+import settingsRoutes from './routes/settings.js';
 
 dotenv.config();
 
@@ -48,6 +49,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/notifications', notifRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/settings', settingsRoutes);
 
 /* 🗄️ MongoDB */
 mongoose.connect(process.env.MONGO_URI)
