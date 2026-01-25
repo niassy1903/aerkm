@@ -184,25 +184,26 @@ router.post('/forgot-password', async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    // ✅ Toujours la même réponse (sécurité)
+    // ❌ Email inexistant → réponse claire
     if (!user) {
-      return res.json({
-        message: "Si l'email existe, un lien a été envoyé."
+      return res.status(404).json({
+        message: "Cet email n'existe pas dans notre base de données."
       });
     }
 
+    // ✅ Email existant
     const resetToken = crypto.randomBytes(32).toString('hex');
+
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1h
     await user.save();
 
     const resetUrl = `https://aerkm.netlify.app/#/login?token=${resetToken}`;
 
-    // 🚀 Email async (anti-timeout)
-    sendResetPasswordEmail(user.email, resetUrl).catch(() => {});
+    await sendResetPasswordEmail(user.email, resetUrl);
 
-    res.json({
-      message: "Si l'email existe, un lien a été envoyé."
+    return res.status(200).json({
+      message: "Lien de réinitialisation envoyé avec succès."
     });
 
   } catch (err) {
@@ -210,6 +211,8 @@ router.post('/forgot-password', async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
+
+
 
 /* ================================
    🔁 RESET PASSWORD
