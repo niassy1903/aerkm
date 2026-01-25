@@ -15,7 +15,16 @@ dotenv.config();
 
 const app = express();
 
-// ✅ CORS (important)
+/* ⏱️ Timeout global (anti Render timeout) */
+app.use((req, res, next) => {
+  res.setTimeout(120000, () => {
+    console.log('⏰ Timeout atteint');
+    res.status(408).json({ message: 'Timeout serveur' });
+  });
+  next();
+});
+
+/* 🌍 CORS */
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -26,13 +35,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// ✅ Gère les preflight OPTIONS
 app.options('*', cors());
 
-// ✅ Body parser
+/* 📦 Body parser */
 app.use(express.json({ limit: '10mb' }));
 
-// ✅ Routes
+/* 🚦 Routes */
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/events', eventRoutes);
@@ -41,10 +49,10 @@ app.use('/api/logs', logsRoutes);
 app.use('/api/notifications', notifRoutes);
 app.use('/api/contact', contactRoutes);
 
-// ✅ MongoDB
+/* 🗄️ MongoDB */
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB Atlas connecté'))
-  .catch(err => console.error('❌ MongoDB Error:', err));
+  .then(() => console.log('✅ MongoDB connecté'))
+  .catch(err => console.error('❌ MongoDB error:', err));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
