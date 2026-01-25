@@ -24,6 +24,8 @@ const Login: React.FC = () => {
   // URL de l'API en production
   const API_URL = 'http://localhost:5000/api';
 
+  const api = 'https://aerkm.onrender.com/api';
+
   // Détection du token dans l'URL
   useEffect(() => {
     const token = searchParams.get('token');
@@ -93,7 +95,7 @@ const Login: React.FC = () => {
     const token = searchParams.get('token');
 
     try {
-      const res = await fetch(`${API_URL}/auth/reset-password`, {
+      const res = await fetch(`${api}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword })
