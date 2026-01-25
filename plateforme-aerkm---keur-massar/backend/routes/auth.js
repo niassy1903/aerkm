@@ -1,3 +1,4 @@
+
 import express from 'express';
 const router = express.Router();
 import bcrypt from 'bcryptjs';
@@ -31,7 +32,6 @@ router.post('/register', async (req, res) => {
 
     await newUser.save();
     
-    // 📩 Envoi des emails de notification
     try {
       await sendRecensementEmail(newUser);
       await sendAdminRegistrationAlert(newUser);
@@ -39,12 +39,15 @@ router.post('/register', async (req, res) => {
       console.error('⚠️ Erreur lors de l\'envoi des e-mails d\'inscription:', mailErr);
     }
 
-    // Journalisation & Notification Interne
     await new Log({ action: 'RECENSEMENT', details: `Nouvel étudiant: ${prenom} ${nom}`, adminId: 'SYSTEM' }).save();
     await new Notification({ titre: 'Nouveau recensement', message: `${prenom} ${nom} vient de s'inscrire.`, type: 'SUCCESS' }).save();
     
     const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '24h' });
-    res.status(201).json({ token, user: { id: newUser._id, email: newUser.email, role: newUser.role, prenom: newUser.prenom, nom: newUser.nom } });
+    
+    const userResponse = newUser.toObject();
+    delete userResponse.password;
+    
+    res.status(201).json({ token, user: userResponse });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -110,8 +113,13 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(400).json({ message: 'Identifiants invalides' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Identifiants invalides' });
+    
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '24h' });
-    res.json({ token, user: { id: user._id, email: user.email, role: user.role, prenom: user.prenom, nom: user.nom } });
+    
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    
+    res.json({ token, user: userResponse });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
@@ -122,14 +130,13 @@ router.post('/forgot-password', async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "Cet email n'existe pas." });
 
-    // Générer un token
     const resetToken = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = Date.now() + 3600000; // 1 heure
     await user.save();
 
-    // Lien de réinitialisation vers la production Netlify
     const frontendUrl = 'https://aerkm.netlify.app';
+    // Format critique pour HashRouter : /#/login?token=...
     const resetUrl = `${frontendUrl}/#/login?token=${resetToken}`;
     
     const sent = await sendResetPasswordEmail(user.email, resetUrl);
