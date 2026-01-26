@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/StudentContext';
@@ -35,6 +35,8 @@ const Inscription: React.FC = () => {
   const [captcha, setCaptcha] = useState({ question: '', answer: 0 });
   const [userCaptcha, setUserCaptcha] = useState('');
   const [captchaError, setCaptchaError] = useState('');
+  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement>(null);
 
   const today = new Date();
   const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
@@ -156,6 +158,13 @@ const Inscription: React.FC = () => {
     }
   };
 
+  const scrollToError = () => {
+    const firstErrorField = formRef.current?.querySelector('.border-red-500');
+    if (firstErrorField) {
+      firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (settings && !settings.registrationOpen) return;
@@ -164,7 +173,7 @@ const Inscription: React.FC = () => {
     ['nom', 'prenom', 'email', 'telephone', 'nin', 'tuteur.nom', 'tuteur.telephone', 'dateNaissance'].forEach(key => {
       const parts = key.split('.');
       const value = parts.length > 1 ? (formData as any)[parts[0]]?.[parts[1]] : (formData as any)[key];
-      if (!value) newErrors[key] = 'Obligatoire';
+      if (!value) newErrors[key] = 'Ce champ est obligatoire.';
     });
 
     if (parseInt(userCaptcha) !== captcha.answer) {
@@ -175,18 +184,24 @@ const Inscription: React.FC = () => {
 
     if (Object.values(errors).some(e => e) || Object.keys(newErrors).length > 0) {
       setErrors(prev => ({ ...prev, ...newErrors }));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToError();
       return;
     }
 
     setLoading(true);
-    const done = await registerStudent(formData);
-    if (done) {
-      setSuccess(true);
-      setTimeout(() => navigate('/etudiant'), 3000);
-    } else {
-      alert("Erreur: L'email est déjà utilisé.");
-      generateCaptcha();
+    try {
+      const response = await registerStudent(formData);
+      if (response) {
+        setSuccess(true);
+        setTimeout(() => navigate('/etudiant'), 3000);
+      } else {
+        setServerErrors({ submit: "Une erreur est survenue lors de l'enregistrement." });
+        scrollToError();
+        generateCaptcha();
+      }
+    } catch (error) {
+      setServerErrors({ submit: "Une erreur est survenue lors de l'envoi du formulaire." });
+      scrollToError();
     }
     setLoading(false);
   };
@@ -202,7 +217,7 @@ const Inscription: React.FC = () => {
   `;
 
   const labelClasses = (isRequired: boolean) => `
-    text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-2 flex items-center
+    text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2
     ${isRequired ? 'after:content-["*"] after:ml-0.5 after:text-red-500' : ''}
   `;
 
@@ -286,7 +301,7 @@ const Inscription: React.FC = () => {
           </div>
 
           {/* Formulaire */}
-          <form onSubmit={handleSubmit} className="p-8 lg:p-14 space-y-16">
+          <form ref={formRef} onSubmit={handleSubmit} className="p-8 lg:p-14 space-y-16">
             {/* Section Identité */}
             <section className="space-y-10">
               <div className="flex items-center space-x-4 border-b border-slate-50 dark:border-slate-800 pb-4">
@@ -310,9 +325,10 @@ const Inscription: React.FC = () => {
                   <label className={labelClasses(true)}>Numéro NIN</label>
                   <div className="relative group">
                     <Fingerprint className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
-                    <input name="nin" value={formData.nin} onChange={handleChange} placeholder="13 à 15 chiffres" className={`${inputClasses(!!errors.nin)} pl-14`} />
+                    <input name="nin" value={formData.nin} onChange={handleChange} placeholder="13 à 15 chiffres" className={`${inputClasses(!!errors.nin || !!serverErrors.nin)} pl-14`} />
                   </div>
                   {errors.nin && <p className={errorMessageClasses}>{errors.nin}</p>}
+                  {serverErrors.nin && <p className={errorMessageClasses}>{serverErrors.nin}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className={labelClasses(true)}>Date de Naissance</label>
@@ -326,17 +342,19 @@ const Inscription: React.FC = () => {
                   <label className={labelClasses(true)}>Téléphone</label>
                   <div className="relative group">
                     <Phone className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
-                    <input name="telephone" placeholder="Ex: 771234567" value={formData.telephone} onChange={handleChange} className={`${inputClasses(!!errors.telephone)} pl-14`} />
+                    <input name="telephone" placeholder="Ex: 771234567" value={formData.telephone} onChange={handleChange} className={`${inputClasses(!!errors.telephone || !!serverErrors.telephone)} pl-14`} />
                   </div>
                   {errors.telephone && <p className={errorMessageClasses}>{errors.telephone}</p>}
+                  {serverErrors.telephone && <p className={errorMessageClasses}>{serverErrors.telephone}</p>}
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <label className={labelClasses(true)}>Email</label>
                   <div className="relative group">
                     <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
-                    <input type="email" name="email" placeholder="exemple@email.com" value={formData.email} onChange={handleChange} className={`${inputClasses(!!errors.email)} pl-14`} />
+                    <input type="email" name="email" placeholder="exemple@email.com" value={formData.email} onChange={handleChange} className={`${inputClasses(!!errors.email || !!serverErrors.email)} pl-14`} />
                   </div>
                   {errors.email && <p className={errorMessageClasses}>{errors.email}</p>}
+                  {serverErrors.email && <p className={errorMessageClasses}>{serverErrors.email}</p>}
                 </div>
               </div>
             </section>
@@ -424,9 +442,7 @@ const Inscription: React.FC = () => {
             {/* Section Sociale */}
             <section className="space-y-10 bg-slate-50 dark:bg-slate-800/30 p-8 lg:p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800/50 transform transition-transform hover:scale-[1.01]">
               <div className="flex items-center space-x-4 border-b border-white dark:border-slate-800 pb-4">
-                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-red-500 transform transition-transform hover:rotate-12">
-                  <Activity size={18} />
-                </div>
+                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-red-500 transform transition-transform hover:rotate-12"><Activity size={18} /></div>
                 <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400">Social & Santé</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -476,17 +492,19 @@ const Inscription: React.FC = () => {
                   <label className={labelClasses(false)}>Email du tuteur</label>
                   <div className="relative">
                     <Mail size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-aerkm-blue" />
-                    <input type="email" name="tuteur.email" placeholder="exemple@email.com" value={formData.tuteur.email} onChange={handleChange} className={`${inputClasses(!!errors['tuteur.email'])} pl-14`} />
+                    <input type="email" name="tuteur.email" placeholder="exemple@email.com" value={formData.tuteur.email} onChange={handleChange} className={`${inputClasses(!!errors['tuteur.email'] || !!serverErrors['tuteur.email'])} pl-14`} />
                   </div>
                   {errors['tuteur.email'] && <p className={errorMessageClasses}>{errors['tuteur.email']}</p>}
+                  {serverErrors['tuteur.email'] && <p className={errorMessageClasses}>{serverErrors['tuteur.email']}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className={labelClasses(true)}>Téléphone WhatsApp du tuteur</label>
                   <div className="relative">
                     <Phone size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-green-500" />
-                    <input name="tuteur.telephone" placeholder="77 123 45 67" value={formData.tuteur.telephone} onChange={handleChange} className={`${inputClasses(!!errors['tuteur.telephone'])} pl-14`} />
+                    <input name="tuteur.telephone" placeholder="77 123 45 67" value={formData.tuteur.telephone} onChange={handleChange} className={`${inputClasses(!!errors['tuteur.telephone'] || !!serverErrors['tuteur.telephone'])} pl-14`} />
                   </div>
                   {errors['tuteur.telephone'] && <p className={errorMessageClasses}>{errors['tuteur.telephone']}</p>}
+                  {serverErrors['tuteur.telephone'] && <p className={errorMessageClasses}>{serverErrors['tuteur.telephone']}</p>}
                 </div>
               </div>
             </section>
