@@ -1,32 +1,98 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
+  /* =====================
+     AUTH
+  ===================== */
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+  },
+
   password: { type: String, required: true },
-  role: { type: String, enum: ['ADMIN', 'ETUDIANT'], default: 'ETUDIANT' },
+
+  role: {
+    type: String,
+    enum: ['ADMIN', 'ETUDIANT'],
+    default: 'ETUDIANT',
+  },
+
   nom: { type: String, required: true },
   prenom: { type: String, required: true },
-  
-  // Champs pour la réinitialisation
-  resetPasswordToken: { type: String },
-  resetPasswordExpires: { type: Date },
 
-  // Champs spécifiques aux étudiants (optionnels pour l'admin)
+  /* =====================
+     RESET PASSWORD
+  ===================== */
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
+
+  /* =====================
+     ETUDIANT
+  ===================== */
   sexe: { type: String, enum: ['M', 'F'] },
-  dateNaissance: { type: Date },
+  dateNaissance: Date,
   lieuOrigine: { type: String, default: 'Keur Massar' },
-  ufr: { type: String },
-  filiere: { type: String },
-  niveau: { type: String },
-  anneeUniversitaire: { type: String },
-  telephone: { type: String },
-  nin: { type: String },
-  tuteur: { type: String },
+  ufr: String,
+  filiere: String,
+  niveau: String,
+  anneeUniversitaire: String,
+
+  /** 📞 Téléphone étudiant */
+  telephone: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+  },
+
+  nin: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+
+  /* =====================
+     TUTEUR
+  ===================== */
+  tuteur: {
+    nom: { type: String, trim: true },
+
+    email: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+
+    telephone: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
+  },
+
+  /* =====================
+     DIVERS
+  ===================== */
   maladieHandicap: { type: Boolean, default: false },
-  typeMaladieHandicap: { type: String },
+  typeMaladieHandicap: String,
+
   logementAmicale: { type: Boolean, default: false },
-  numeroRecensement: { type: String, unique: true, sparse: true },
-  dateInscription: { type: Date, default: Date.now }
+
+  numeroRecensement: {
+    type: String,
+    unique: true,
+  },
+
+  dateInscription: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const User = mongoose.model('User', userSchema);

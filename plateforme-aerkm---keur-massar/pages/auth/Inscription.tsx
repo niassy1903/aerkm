@@ -20,7 +20,7 @@ import {
   Calendar,
   RefreshCw,
   ShieldCheck,
-  BotOff,
+  AlertCircle,
   Lock,
   Loader2
 } from 'lucide-react';
@@ -53,10 +53,14 @@ const Inscription: React.FC = () => {
     telephone: '',
     email: '',
     nin: '',
-    tuteur: '',
+    tuteur: {
+      nom: '',
+      email: '',
+      telephone: '',
+    },
     maladieHandicap: false,
     typeMaladieHandicap: '',
-    logementAmicale: false
+    logementAmicale: false,
   });
 
   // Génération du CAPTCHA
@@ -102,22 +106,46 @@ const Inscription: React.FC = () => {
   const validateField = (name: string, value: any) => {
     let error = '';
     if (name === 'nin') {
-      if (!/^\d{13,15}$/.test(value)) error = 'Le NIN doit comporter 13 à 15 chiffres.';
+      if (!value) error = 'Le NIN est obligatoire.';
+      else if (!/^\d{13,15}$/.test(value)) error = 'Le NIN doit comporter 13 à 15 chiffres.';
     }
     if (name === 'telephone') {
-      if (!/^(77|78|70|76|33)\d{7}$/.test(value)) error = 'Numéro de téléphone invalide.';
+      if (!value) error = 'Le téléphone est obligatoire.';
+      else if (!/^(77|78|70|76|33)\d{7}$/.test(value)) error = 'Numéro de téléphone invalide.';
     }
     if (name === 'email') {
-      if (!/\S+@\S+\.\S+/.test(value)) error = 'Format email invalide.';
+      if (!value) error = 'L\'email est obligatoire.';
+      else if (!/\S+@\S+\.\S+/.test(value)) error = 'Format email invalide.';
     }
+    if (name === 'tuteur.email') {
+      if (value && !/\S+@\S+\.\S+/.test(value)) error = 'Format email invalide.';
+    }
+    if (name === 'tuteur.telephone') {
+      if (!value) error = 'Le téléphone du tuteur est obligatoire.';
+      else if (!/^(77|78|70|76|33)\d{7}$/.test(value)) error = 'Numéro de téléphone invalide.';
+    }
+    if (name === 'nom' && !value) error = 'Le nom est obligatoire.';
+    if (name === 'prenom' && !value) error = 'Le prénom est obligatoire.';
+    if (name === 'dateNaissance' && !value) error = 'La date de naissance est obligatoire.';
+    if (name === 'tuteur.nom' && !value) error = 'Le nom du tuteur est obligatoire.';
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const finalValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
-    setFormData(prev => ({ ...prev, [name]: finalValue }));
-    validateField(name, finalValue);
+
+    if (name.startsWith('tuteur.')) {
+      const tuteurField = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        tuteur: { ...prev.tuteur, [tuteurField]: value }
+      }));
+      validateField(name, value);
+    } else {
+      setFormData(prev => ({ ...prev, [name]: finalValue }));
+      validateField(name, finalValue);
+    }
   };
 
   const handleToggle = (name: string, value: boolean) => {
@@ -133,8 +161,10 @@ const Inscription: React.FC = () => {
     if (settings && !settings.registrationOpen) return;
 
     const newErrors: Record<string, string> = {};
-    ['nom', 'prenom', 'email', 'telephone', 'nin', 'tuteur', 'dateNaissance'].forEach(key => {
-      if (!(formData as any)[key].toString().trim()) newErrors[key] = 'Obligatoire';
+    ['nom', 'prenom', 'email', 'telephone', 'nin', 'tuteur.nom', 'tuteur.telephone', 'dateNaissance'].forEach(key => {
+      const parts = key.split('.');
+      const value = parts.length > 1 ? (formData as any)[parts[0]]?.[parts[1]] : (formData as any)[key];
+      if (!value) newErrors[key] = 'Obligatoire';
     });
 
     if (parseInt(userCaptcha) !== captcha.answer) {
@@ -143,7 +173,7 @@ const Inscription: React.FC = () => {
       return;
     }
 
-    if (Object.values(errors).some(e => e !== '') || Object.keys(newErrors).length > 0) {
+    if (Object.values(errors).some(e => e) || Object.keys(newErrors).length > 0) {
       setErrors(prev => ({ ...prev, ...newErrors }));
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -163,13 +193,21 @@ const Inscription: React.FC = () => {
 
   const inputClasses = (hasError: boolean) => `
     w-full px-6 py-4 bg-white dark:bg-slate-800/50
-    border border-slate-200 dark:border-slate-700
+    border-2 ${hasError ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}
     rounded-2xl outline-none transition-all duration-300
     placeholder:text-slate-300 dark:placeholder:text-slate-600
     font-bold text-slate-700 dark:text-slate-200
     focus:border-aerkm-blue dark:focus:border-aerkm-gold
     focus:ring-2 focus:ring-aerkm-blue/20 dark:focus:ring-aerkm-gold/20
-    ${hasError ? 'border-red-400' : ''}
+  `;
+
+  const labelClasses = (isRequired: boolean) => `
+    text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-2 flex items-center
+    ${isRequired ? 'after:content-["*"] after:ml-0.5 after:text-red-500' : ''}
+  `;
+
+  const errorMessageClasses = `
+    text-xs text-red-500 mt-1 ml-2
   `;
 
   // Écran de fermeture des inscriptions
@@ -252,39 +290,53 @@ const Inscription: React.FC = () => {
             {/* Section Identité */}
             <section className="space-y-10">
               <div className="flex items-center space-x-4 border-b border-slate-50 dark:border-slate-800 pb-4">
-                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-aerkm-brown transform transition-transform hover:rotate-12"><User size={18} /></div>
+                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-aerkm-brown transform transition-transform hover:rotate-12">
+                  <User size={18} />
+                </div>
                 <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400">Identité & NIN</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Prénom</label>
-                  <input name="prenom" required placeholder="Ex: Moussa" value={formData.prenom} onChange={handleChange} className={inputClasses(!!errors.prenom)} />
+                  <label className={labelClasses(true)}>Prénom</label>
+                  <input name="prenom" placeholder="Ex: Moussa" value={formData.prenom} onChange={handleChange} className={inputClasses(!!errors.prenom)} />
+                  {errors.prenom && <p className={errorMessageClasses}>{errors.prenom}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Nom</label>
-                  <input name="nom" required placeholder="Ex: DIOP" value={formData.nom} onChange={handleChange} className={inputClasses(!!errors.nom)} />
+                  <label className={labelClasses(true)}>Nom</label>
+                  <input name="nom" placeholder="Ex: DIOP" value={formData.nom} onChange={handleChange} className={inputClasses(!!errors.nom)} />
+                  {errors.nom && <p className={errorMessageClasses}>{errors.nom}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Numéro NIN</label>
+                  <label className={labelClasses(true)}>Numéro NIN</label>
                   <div className="relative group">
                     <Fingerprint className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
-                    <input name="nin" required value={formData.nin} onChange={handleChange} placeholder="13 à 15 chiffres" className={`${inputClasses(!!errors.nin)} pl-14`} />
+                    <input name="nin" value={formData.nin} onChange={handleChange} placeholder="13 à 15 chiffres" className={`${inputClasses(!!errors.nin)} pl-14`} />
                   </div>
+                  {errors.nin && <p className={errorMessageClasses}>{errors.nin}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Date de Naissance</label>
+                  <label className={labelClasses(true)}>Date de Naissance</label>
                   <div className="relative group">
                     <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
-                    <input type="date" name="dateNaissance" required max={maxDateString} value={formData.dateNaissance} onChange={handleChange} className={`${inputClasses(!!errors.dateNaissance)} pl-14`} />
+                    <input type="date" name="dateNaissance" max={maxDateString} value={formData.dateNaissance} onChange={handleChange} className={`${inputClasses(!!errors.dateNaissance)} pl-14`} />
                   </div>
+                  {errors.dateNaissance && <p className={errorMessageClasses}>{errors.dateNaissance}</p>}
                 </div>
-                {/* Email déplacé ici */}
+                <div className="space-y-2">
+                  <label className={labelClasses(true)}>Téléphone</label>
+                  <div className="relative group">
+                    <Phone className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
+                    <input name="telephone" placeholder="Ex: 771234567" value={formData.telephone} onChange={handleChange} className={`${inputClasses(!!errors.telephone)} pl-14`} />
+                  </div>
+                  {errors.telephone && <p className={errorMessageClasses}>{errors.telephone}</p>}
+                </div>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Email</label>
+                  <label className={labelClasses(true)}>Email</label>
                   <div className="relative group">
                     <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600" size={18} />
-                    <input type="email" name="email" required placeholder="exemple@email.com" value={formData.email} onChange={handleChange} className={`${inputClasses(!!errors.email)} pl-14`} />
+                    <input type="email" name="email" placeholder="exemple@email.com" value={formData.email} onChange={handleChange} className={`${inputClasses(!!errors.email)} pl-14`} />
                   </div>
+                  {errors.email && <p className={errorMessageClasses}>{errors.email}</p>}
                 </div>
               </div>
             </section>
@@ -298,9 +350,8 @@ const Inscription: React.FC = () => {
                 <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400">Cursus Universitaire</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* UFR */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">UFR</label>
+                  <label className={labelClasses(true)}>UFR</label>
                   <select
                     name="ufr"
                     value={formData.ufr}
@@ -314,10 +365,8 @@ const Inscription: React.FC = () => {
                     ))}
                   </select>
                 </div>
-
-                {/* Filière */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Filière</label>
+                  <label className={labelClasses(true)}>Filière</label>
                   <select
                     name="filiere"
                     value={formData.filiere}
@@ -331,10 +380,23 @@ const Inscription: React.FC = () => {
                     ))}
                   </select>
                 </div>
-
-                {/* Sexe */}
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Sexe</label>
+                <div className="space-y-2">
+                  <label className={labelClasses(true)}>Niveau</label>
+                  <select
+                    name="niveau"
+                    value={formData.niveau}
+                    onChange={handleChange}
+                    className={inputClasses(false)}
+                  >
+                    {NIVEAUX.map((niveau) => (
+                      <option key={niveau} value={niveau}>
+                        {niveau}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className={labelClasses(true)}>Sexe</label>
                   <div className="flex p-1 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
                     <button
                       type="button"
@@ -359,23 +421,24 @@ const Inscription: React.FC = () => {
               </div>
             </section>
 
-
             {/* Section Sociale */}
             <section className="space-y-10 bg-slate-50 dark:bg-slate-800/30 p-8 lg:p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800/50 transform transition-transform hover:scale-[1.01]">
               <div className="flex items-center space-x-4 border-b border-white dark:border-slate-800 pb-4">
-                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-red-500 transform transition-transform hover:rotate-12"><Activity size={18} /></div>
+                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-red-500 transform transition-transform hover:rotate-12">
+                  <Activity size={18} />
+                </div>
                 <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-400">Social & Santé</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-2">Pathologie ou Handicap ?</label>
+                  <label className={labelClasses(false)}>Pathologie ou Handicap ?</label>
                   <div className="flex p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 w-fit">
                     <button type="button" onClick={() => handleToggle('maladieHandicap', true)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${formData.maladieHandicap ? 'bg-red-500 text-white' : 'text-slate-400'}`}>OUI</button>
                     <button type="button" onClick={() => handleToggle('maladieHandicap', false)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${!formData.maladieHandicap ? 'bg-slate-100 dark:bg-slate-800' : 'text-slate-400'}`}>NON</button>
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-2">Logement de l'Amicale ?</label>
+                  <label className={labelClasses(false)}>Logement de l'Amicale ?</label>
                   <div className="flex p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 w-fit">
                     <button type="button" onClick={() => handleToggle('logementAmicale', true)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${formData.logementAmicale ? 'bg-aerkm-blue text-white' : 'text-slate-400'}`}>OUI</button>
                     <button type="button" onClick={() => handleToggle('logementAmicale', false)} className={`px-8 py-3 rounded-xl text-[10px] font-black transition-all ${!formData.logementAmicale ? 'bg-slate-100 dark:bg-slate-800' : 'text-slate-400'}`}>NON</button>
@@ -402,18 +465,28 @@ const Inscription: React.FC = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-2">Nom complet du tuteur / responsable</label>
+                  <label className={labelClasses(true)}>Nom complet du tuteur / responsable</label>
                   <div className="relative">
                     <ShieldCheck size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-aerkm-gold" />
-                    <input name="tuteur" required placeholder="Ex : Abdoulaye Ndiaye" value={formData.tuteur} onChange={handleChange} className={`${inputClasses(!!errors.tuteur)} pl-14`} />
+                    <input name="tuteur.nom" placeholder="Ex: Abdoulaye Ndiaye" value={formData.tuteur.nom} onChange={handleChange} className={`${inputClasses(!!errors['tuteur.nom'])} pl-14`} />
                   </div>
+                  {errors['tuteur.nom'] && <p className={errorMessageClasses}>{errors['tuteur.nom']}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-2">Téléphone WhatsApp</label>
+                  <label className={labelClasses(false)}>Email du tuteur</label>
+                  <div className="relative">
+                    <Mail size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-aerkm-blue" />
+                    <input type="email" name="tuteur.email" placeholder="exemple@email.com" value={formData.tuteur.email} onChange={handleChange} className={`${inputClasses(!!errors['tuteur.email'])} pl-14`} />
+                  </div>
+                  {errors['tuteur.email'] && <p className={errorMessageClasses}>{errors['tuteur.email']}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className={labelClasses(true)}>Téléphone WhatsApp du tuteur</label>
                   <div className="relative">
                     <Phone size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-green-500" />
-                    <input name="telephone" placeholder="77 123 45 67" required value={formData.telephone} onChange={handleChange} className={`${inputClasses(!!errors.telephone)} pl-14`} />
+                    <input name="tuteur.telephone" placeholder="77 123 45 67" value={formData.tuteur.telephone} onChange={handleChange} className={`${inputClasses(!!errors['tuteur.telephone'])} pl-14`} />
                   </div>
+                  {errors['tuteur.telephone'] && <p className={errorMessageClasses}>{errors['tuteur.telephone']}</p>}
                 </div>
               </div>
             </section>
@@ -426,8 +499,9 @@ const Inscription: React.FC = () => {
                   <span className="text-2xl font-black text-aerkm-blue dark:text-aerkm-gold">{captcha.question} = ?</span>
                 </div>
                 <div className="flex-1 w-full max-w-xs space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Résultat</label>
-                  <input type="number" required value={userCaptcha} onChange={e => setUserCaptcha(e.target.value)} className={inputClasses(!!captchaError)} />
+                  <label className={labelClasses(true)}>Résultat</label>
+                  <input type="number" value={userCaptcha} onChange={e => setUserCaptcha(e.target.value)} className={inputClasses(!!captchaError)} />
+                  {captchaError && <p className={errorMessageClasses}>{captchaError}</p>}
                 </div>
               </div>
             </section>
