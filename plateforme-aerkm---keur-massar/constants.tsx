@@ -1,4 +1,3 @@
-
 export const ACADEMIC_STRUCTURE = {
   "UFR ECOMIJ (Économie, Management et Ingénierie Juridique)": [
     "Économie et Management",
@@ -6,7 +5,11 @@ export const ACADEMIC_STRUCTURE = {
     "Commerce électronique et cybersécurité",
     "Juriste d’affaires",
     "Juriste spécialiste de l’administration publique",
-    "Ingénierie juridique"
+    "Ingénierie juridique",
+    "Finance Comptabilité",
+    "Management – Responsable des Organisations",
+    "Administration Publique",
+    "Management Juridique Environnemental et Foncier"
   ],
   "UFR SATIC (Sciences Appliquées et Technologies de l’Information et de la Communication)": [
     "Mathématiques",
@@ -15,11 +18,21 @@ export const ACADEMIC_STRUCTURE = {
     "Physique‑Chimie & Physique Numérique",
     "Administration et Maintenance des Réseaux Téléinformatiques",
     "Développement et Administration des Applications Web",
-    "Licence Professionnelle Création Multimédia"
+    "Licence Professionnelle Création Multimédia",
+    "Statistique & Informatique Décisionnelle",
+    "Systèmes, Réseaux & Télécoms"
   ],
   "UFR SDD (Santé et Développement Durable)": [
     "Licence Santé Communautaire",
-    "Licence Ingénierie Technique du Développement Durable (ITDDME)"
+    "Licence Ingénierie Technique du Développement Durable (ITDDME)",
+    "Développement Durable",
+    "Médecine"
+  ],
+  "ISFAR (Institut Supérieur de Formation Agricole et Rural)": [
+    "Conseil agricole et rural",
+    "Sciences agronomiques – spécialité Élevage",
+    "Sciences agronomiques – spécialité Eaux & Forêts",
+    "Sciences agronomiques – spécialité Agriculture"
   ]
 };
 
@@ -52,7 +65,7 @@ export const BUREAU_MEMBERS = [
     nom: "DIOP",
     telephone: "+221 77 123 45 67",
     email: "president@aerkm.sn",
-    image: "", // pas d'image → affichera les initiales
+    image: "",
     color: "from-aerkm-blue to-blue-600"
   },
   {
@@ -61,7 +74,7 @@ export const BUREAU_MEMBERS = [
     nom: "SARR",
     telephone: "+221 78 987 65 43",
     email: "vice-president@aerkm.sn",
-    image: "", // pas d'image
+    image: "",
     color: "from-aerkm-brown to-amber-700"
   },
   {
@@ -70,7 +83,7 @@ export const BUREAU_MEMBERS = [
     nom: "BA",
     telephone: "+221 70 111 22 33",
     email: "secretariat@aerkm.sn",
-    image: "", // pas d'image
+    image: "",
     color: "from-slate-700 to-slate-900"
   },
   {
@@ -79,7 +92,7 @@ export const BUREAU_MEMBERS = [
     nom: "FALL",
     telephone: "+221 76 444 55 66",
     email: "tresorerie@aerkm.sn",
-    image: "", // pas d'image
+    image: "",
     color: "from-aerkm-gold to-amber-500"
   },
   {
@@ -88,7 +101,7 @@ export const BUREAU_MEMBERS = [
     nom: "GUEYE",
     telephone: "+221 75 888 99 00",
     email: "social@aerkm.sn",
-    image: "", // pas d'image
+    image: "",
     color: "from-red-600 to-red-800"
   },
   {
@@ -97,11 +110,10 @@ export const BUREAU_MEMBERS = [
     nom: "NDIAYE",
     telephone: "+221 77 222 33 44",
     email: "pedagogie@aerkm.sn",
-    image: "", // pas d'image
+    image: "",
     color: "from-green-600 to-green-800"
   }
 ];
-
 
 export const ADMIN_CREDENTIALS = {
   email: "admin@aerkm.sn",
