@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Etudiant } from '../../types';
@@ -7,15 +6,16 @@ import { User, Phone, Mail, Save, Shield, BadgeCheck, Stethoscope, Home, Activit
 const Profil: React.FC = () => {
   const { user } = useAuth();
   const student = user as Etudiant;
-  
+
   const [formData, setFormData] = useState({
-    telephone: student.telephone,
-    email: student.email,
+    telephone: student.telephone || '',
+    email: student.email || '',
   });
 
   return (
     <div className="bg-slate-50 min-h-screen py-12 px-6">
       <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header */}
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 bg-aerkm-blue text-white rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg">
             {student.prenom[0]}{student.nom[0]}
@@ -31,23 +31,36 @@ const Profil: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
+
             {/* Contact Form */}
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900 mb-8 border-b border-slate-50 pb-4">Mettre à jour mes coordonnées</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-8 border-b border-slate-50 pb-4">
+                Mettre à jour mes coordonnées
+              </h2>
               <form className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Téléphone WhatsApp</label>
                     <div className="relative">
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                      <input type="tel" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" value={formData.telephone} onChange={e => setFormData({...formData, telephone: e.target.value})} />
+                      <input
+                        type="tel"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                        value={formData.telephone}
+                        onChange={e => setFormData({ ...formData, telephone: e.target.value })}
+                      />
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Email</label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                      <input type="email" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                      <input
+                        type="email"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                        value={formData.email}
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      />
                     </div>
                   </div>
                 </div>
@@ -95,25 +108,29 @@ const Profil: React.FC = () => {
               </h2>
               <div className="grid grid-cols-2 gap-8">
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Recensement</p>
-                   <p className="text-slate-800 font-black">{student.numeroRecensement}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Recensement</p>
+                  <p className="text-slate-800 font-black">{student.numeroRecensement}</p>
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tuteur</p>
-                   <p className="text-slate-800 font-bold">{student.tuteur}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tuteur</p>
+                  {/* ⚡ Correction : afficher le nom du tuteur */}
+                  <p className="text-slate-800 font-bold">{student.tuteur.nom}</p>
+                  {/* Optionnel : afficher email et téléphone */}
+                  {/* <p className="text-slate-800 text-sm">{student.tuteur.email} - {student.tuteur.telephone}</p> */}
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">UFR</p>
-                   <p className="text-slate-800 font-bold">{student.ufr}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">UFR</p>
+                  <p className="text-slate-800 font-bold">{student.ufr}</p>
                 </div>
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Niveau</p>
-                   <p className="text-slate-800 font-bold">{student.niveau}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Niveau</p>
+                  <p className="text-slate-800 font-bold">{student.niveau}</p>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Sidebar : Confidentialité */}
           <div className="space-y-8">
             <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white">
               <Shield className="text-aerkm-gold mb-6" size={32} />
