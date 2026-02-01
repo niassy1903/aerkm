@@ -2,10 +2,11 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/StudentContext';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  AreaChart, Area
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { Users, Calendar, TrendingUp, Sparkles, GraduationCap, Clock, ArrowUpRight, History, RefreshCw } from 'lucide-react';
+import { 
+  Users, Calendar, TrendingUp, Sparkles, GraduationCap, Clock, ArrowUpRight, History, RefreshCw 
+} from 'lucide-react';
 import { UFR_LIST } from '../../constants';
 import { Link } from 'react-router-dom';
 
@@ -20,12 +21,12 @@ const DashboardAdmin: React.FC = () => {
     } catch (error) {
       console.error("Erreur lors de l'actualisation :", error);
     } finally {
-      // Feedback visuel de 800ms
+      // Feedback visuel court pour confirmer l'action
       setTimeout(() => setIsRefreshing(false), 800);
     }
   };
 
-  // Stats computation
+  // Calcul des statistiques globales
   const stats = useMemo(() => [
     { label: 'Recensés', value: students.length, icon: <Users size={24} />, color: 'bg-aerkm-blue', textColor: 'text-white' },
     { label: 'Agenda', value: events.length, icon: <Calendar size={24} />, color: 'bg-aerkm-brown', textColor: 'text-white' },
@@ -33,29 +34,32 @@ const DashboardAdmin: React.FC = () => {
     { label: 'Croissance', value: '+18%', icon: <TrendingUp size={24} />, color: 'bg-aerkm-gold', textColor: 'text-aerkm-blue' },
   ], [students.length, events.length]);
 
-  // Logic correction for the UFR Chart
+  // Logic pour le graphique UFR - Matching robuste pour éviter les "0"
   const ufrData = useMemo(() => {
     return UFR_LIST.map(ufrFullString => {
-      // Extraction du nom court (ex: "SATIC", "ECOMIJ")
-      const shortName = ufrFullString.split('(')[0].replace('UFR ', '').trim();
+      // Extraction du nom court (ex: "SATIC" de "UFR SATIC (...)")
+      const parts = ufrFullString.split('(');
+      const shortNameRaw = parts[0].replace('UFR ', '').trim();
       
-      // Filtrage flexible pour faire correspondre le nom court ou complet
+      // Filtrage flexible pour faire correspondre le nom stocké en DB (souvent abrégé ou avec préfixe)
       const count = students.filter(s => {
         if (!s.ufr) return false;
-        const studentUfr = s.ufr.toLowerCase();
-        const targetUfrFull = ufrFullString.toLowerCase();
-        const targetShort = shortName.toLowerCase();
         
-        // Match si le nom en base est exactement le nom court, complet, 
-        // ou si l'un contient l'autre (pour parer aux erreurs de saisie)
+        const studentUfr = s.ufr.toLowerCase().trim();
+        const targetUfrFull = ufrFullString.toLowerCase().trim();
+        const targetShort = shortNameRaw.toLowerCase().trim();
+        const targetWithUfrPrefix = `ufr ${targetShort}`;
+
+        // Match sur différentes variantes possibles pour garantir l'affichage
         return studentUfr === targetShort || 
+               studentUfr === targetWithUfrPrefix ||
                studentUfr === targetUfrFull || 
                studentUfr.includes(targetShort) || 
                targetUfrFull.includes(studentUfr);
       }).length;
 
       return {
-        name: shortName,
+        name: shortNameRaw,
         count: count
       };
     });
