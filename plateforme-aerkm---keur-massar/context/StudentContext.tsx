@@ -15,6 +15,7 @@ interface StudentContextType {
   students: Etudiant[];
   events: Evenement[];
   admins: User[];
+  bureauMembers: User[];
   notifications: Notification[];
   logs: ActivityLog[];
   settings: SystemSettings | null;
@@ -29,16 +30,21 @@ interface StudentContextType {
   markNotifAsRead: (id: string) => Promise<void>;
   clearNotifications: () => Promise<void>;
   updateSettings: (newSettings: SystemSettings) => Promise<void>;
+  updateBureauStatus: (userId: string, isBureau: boolean, position: string) => Promise<void>;
   fetchData: () => Promise<void>;
 }
 
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
-const API_BASE_URL = 'https://aerkm.onrender.com/api';
+
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api'
+  : 'https://aerkm.onrender.com/api';
 
 export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [students, setStudents] = useState<Etudiant[]>([]);
   const [events, setEvents] = useState<Evenement[]>([]);
   const [admins, setAdmins] = useState<User[]>([]);
+  const [bureauMembers, setBureauMembers] = useState<User[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -49,110 +55,148 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
 
   const fetchData = async () => {
+    console.log("🔄 Actualisation globale des données...");
     try {
-      // Paramètres publics
+      // 1. Fetch public data
       const resSettings = await fetch(`${API_BASE_URL}/settings`);
-      if (resSettings.ok) setSettings(await resSettings.json());
-
-      // Événements publics
-      const resEvents = await fetch(`${API_BASE_URL}/events`);
-      if (resEvents.ok) setEvents(await resEvents.json());
-
-      const user = JSON.parse(localStorage.getItem('aerkm_user') || '{}');
-      if (user.role === 'ADMIN') {
-        const h = getHeaders();
-        const [resS, resA, resN, resL] = await Promise.all([
-          fetch(`${API_BASE_URL}/students`, { headers: h }),
-          fetch(`${API_BASE_URL}/auth/admins`, { headers: h }),
-          fetch(`${API_BASE_URL}/notifications`, { headers: h }),
-          fetch(`${API_BASE_URL}/logs`, { headers: h })
-        ]);
-
-        // Fix: corrected line 71 to properly await the JSON response and removed redundant conditional check
-        if (resS.ok) setStudents(await resS.json());
-        if (resA.ok) setAdmins(await resA.json());
-        if (resN.ok) setNotifications(await resN.json());
-        if (resL.ok) setLogs(await resL.json());
+      if (resSettings.ok) {
+        const settingsData = await resSettings.json();
+        setSettings(settingsData);
       }
-    } catch (err) {
-      console.error('Fetch data error:', err);
+
+      const resEvents = await fetch(`${API_BASE_URL}/events`);
+      if (resEvents.ok) {
+        const eventsData = await resEvents.json();
+        setEvents(eventsData);
+      }
+
+      // 2. Fetch protected data if logged in as ADMIN
+      const savedUser = localStorage.getItem('aerkm_user');
+      if (savedUser && savedUser !== "undefined" && savedUser !== "null") {
+        const user = JSON.parse(savedUser);
+        if (user && user.role === 'ADMIN') {
+          const h = getHeaders();
+          
+          const [resS, resA, resN, resL, resB] = await Promise.all([
+            fetch(`${API_BASE_URL}/students`, { headers: h }),
+            fetch(`${API_BASE_URL}/auth/admins`, { headers: h }),
+            fetch(`${API_BASE_URL}/notifications`, { headers: h }),
+            fetch(`${API_BASE_URL}/logs`, { headers: h }),
+            fetch(`${API_BASE_URL}/auth/bureau`, { headers: h })
+          ]);
+
+          if (resS.ok) {
+            const data = await resS.json();
+            setStudents(Array.isArray(data) ? data : []);
+          }
+          
+          if (resA.ok) {
+            const data = await resA.json();
+            setAdmins(Array.isArray(data) ? data : []);
+          }
+          
+          if (resN.ok) {
+            const data = await resN.json();
+            setNotifications(Array.isArray(data) ? data : []);
+          }
+          
+          if (resL.ok) {
+            const data = await resL.json();
+            setLogs(Array.isArray(data) ? data : []);
+          }
+          
+          if (resB.ok) {
+            const data = await resB.json();
+            setBureauMembers(Array.isArray(data) ? data : []);
+          }
+        }
+      }
+      console.log("✅ Données actualisées avec succès");
+    } catch (err) { 
+      console.error("❌ Erreur lors du rafraîchissement:", err); 
     }
   };
 
-  useEffect(() => {
-    fetchData();
+  useEffect(() => { 
+    fetchData(); 
   }, []);
 
-  const updateSettings = async (newSettings: SystemSettings) => {
-    const res = await fetch(`${API_BASE_URL}/settings`, {
+  const updateBureauStatus = async (userId: string, isBureau: boolean, position: string) => {
+    const res = await fetch(`${API_BASE_URL}/auth/admins/${userId}`, {
       method: 'PUT',
       headers: getHeaders(),
-      body: JSON.stringify(newSettings)
+      body: JSON.stringify({ isBureau, bureauPosition: position })
     });
-    if (res.ok) setSettings(await res.json());
+    if (res.ok) await fetchData();
   };
-
-  // ... (Autres méthodes addEvent, updateEvent, etc. inchangées)
 
   const addEvent = async (event: any) => {
     const res = await fetch(`${API_BASE_URL}/events`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(event) });
-    if (res.ok) fetchData();
+    if (res.ok) await fetchData();
   };
 
   const updateEvent = async (event: Evenement) => {
     const res = await fetch(`${API_BASE_URL}/events/${event._id || event.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(event) });
-    if (res.ok) fetchData();
+    if (res.ok) await fetchData();
   };
 
   const deleteEvent = async (id: string) => {
     const res = await fetch(`${API_BASE_URL}/events/${id}`, { method: 'DELETE', headers: getHeaders() });
-    if (res.ok) fetchData();
+    if (res.ok) await fetchData();
   };
 
   const updateStudent = async (student: Etudiant) => {
     const res = await fetch(`${API_BASE_URL}/students/${student._id || student.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(student) });
-    if (res.ok) fetchData();
+    if (res.ok) await fetchData();
   };
 
   const deleteStudent = async (id: string) => {
     const res = await fetch(`${API_BASE_URL}/students/${id}`, { method: 'DELETE', headers: getHeaders() });
-    if (res.ok) fetchData();
+    if (res.ok) await fetchData();
   };
 
   const addAdmin = async (admin: any) => {
     const res = await fetch(`${API_BASE_URL}/auth/admins`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(admin) });
-    if (res.ok) { fetchData(); return true; }
+    if (res.ok) { await fetchData(); return true; }
     return false;
   };
 
   const updateAdmin = async (admin: any) => {
     const res = await fetch(`${API_BASE_URL}/auth/admins/${admin._id || admin.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(admin) });
-    if (res.ok) fetchData();
+    if (res.ok) await fetchData();
   };
 
   const deleteAdmin = async (id: string) => {
     const res = await fetch(`${API_BASE_URL}/auth/admins/${id}`, { method: 'DELETE', headers: getHeaders() });
-    if (res.ok) fetchData();
+    if (res.ok) await fetchData();
   };
 
   const markNotifAsRead = async (id: string) => {
     const res = await fetch(`${API_BASE_URL}/notifications/${id}`, { method: 'PUT', headers: getHeaders() });
-    if (res.ok) fetchData();
+    if (res.ok) await fetchData();
   };
 
   const clearNotifications = async () => {
     const res = await fetch(`${API_BASE_URL}/notifications`, { method: 'DELETE', headers: getHeaders() });
-    if (res.ok) fetchData();
+    if (res.ok) await fetchData();
+  };
+
+  const updateSettings = async (newSettings: SystemSettings) => {
+    const res = await fetch(`${API_BASE_URL}/settings`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(newSettings) });
+    if (res.ok) {
+      const updatedData = await res.json();
+      setSettings(updatedData);
+    }
   };
 
   return (
     <StudentContext.Provider value={{ 
-      students, events, admins, notifications, logs, settings,
+      students, events, admins, bureauMembers, notifications, logs, settings,
       addEvent, updateEvent, deleteEvent, 
       updateStudent, deleteStudent,
       addAdmin, updateAdmin, deleteAdmin,
       markNotifAsRead, clearNotifications,
-      updateSettings, fetchData
+      updateSettings, updateBureauStatus, fetchData
     }}>
       {children}
     </StudentContext.Provider>

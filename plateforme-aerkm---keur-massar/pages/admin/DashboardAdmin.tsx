@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/StudentContext';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -20,23 +20,46 @@ const DashboardAdmin: React.FC = () => {
     } catch (error) {
       console.error("Erreur lors de l'actualisation :", error);
     } finally {
-      // Petite pause pour le feedback visuel
-      setTimeout(() => setIsRefreshing(false), 600);
+      // Feedback visuel de 800ms
+      setTimeout(() => setIsRefreshing(false), 800);
     }
   };
 
   // Stats computation
-  const stats = [
+  const stats = useMemo(() => [
     { label: 'Recensés', value: students.length, icon: <Users size={24} />, color: 'bg-aerkm-blue', textColor: 'text-white' },
     { label: 'Agenda', value: events.length, icon: <Calendar size={24} />, color: 'bg-aerkm-brown', textColor: 'text-white' },
     { label: 'UFR Actives', value: UFR_LIST.length, icon: <GraduationCap size={24} />, color: 'bg-white', textColor: 'text-aerkm-blue' },
     { label: 'Croissance', value: '+18%', icon: <TrendingUp size={24} />, color: 'bg-aerkm-gold', textColor: 'text-aerkm-blue' },
-  ];
+  ], [students.length, events.length]);
 
-  const ufrData = UFR_LIST.map(ufr => ({
-    name: ufr.split('(')[0].replace('UFR ', ''),
-    count: students.filter(s => s.ufr === ufr).length
-  }));
+  // Logic correction for the UFR Chart
+  const ufrData = useMemo(() => {
+    return UFR_LIST.map(ufrFullString => {
+      // Extraction du nom court (ex: "SATIC", "ECOMIJ")
+      const shortName = ufrFullString.split('(')[0].replace('UFR ', '').trim();
+      
+      // Filtrage flexible pour faire correspondre le nom court ou complet
+      const count = students.filter(s => {
+        if (!s.ufr) return false;
+        const studentUfr = s.ufr.toLowerCase();
+        const targetUfrFull = ufrFullString.toLowerCase();
+        const targetShort = shortName.toLowerCase();
+        
+        // Match si le nom en base est exactement le nom court, complet, 
+        // ou si l'un contient l'autre (pour parer aux erreurs de saisie)
+        return studentUfr === targetShort || 
+               studentUfr === targetUfrFull || 
+               studentUfr.includes(targetShort) || 
+               targetUfrFull.includes(studentUfr);
+      }).length;
+
+      return {
+        name: shortName,
+        count: count
+      };
+    });
+  }, [students]);
 
   return (
     <div className="space-y-10 p-8 lg:p-12 animate-in fade-in duration-700">
@@ -95,18 +118,33 @@ const DashboardAdmin: React.FC = () => {
              </div>
           </div>
           <div className="h-80 w-full relative z-10">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ufrData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 9, fontWeight: 'black'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 9, fontWeight: 'black'}} />
-                <Tooltip 
-                  cursor={{fill: '#f8fafc', radius: 10}}
-                  contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 30px 60px rgba(0,0,0,0.1)', padding: '20px'}}
-                />
-                <Bar dataKey="count" fill="#1e3a8a" radius={[12, 12, 0, 0]} barSize={50} />
-              </BarChart>
-            </ResponsiveContainer>
+            {students.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ufrData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#64748b', fontSize: 10, fontWeight: 700}} 
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#64748b', fontSize: 10, fontWeight: 700}} 
+                  />
+                  <Tooltip 
+                    cursor={{fill: '#f8fafc', radius: 10}}
+                    contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 30px 60px rgba(0,0,0,0.1)', padding: '20px'}}
+                  />
+                  <Bar dataKey="count" fill="#1e3a8a" radius={[12, 12, 0, 0]} barSize={50} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-slate-300 font-bold italic border-2 border-dashed border-slate-100 rounded-3xl">
+                Chargement des données analytiques...
+              </div>
+            )}
           </div>
         </div>
 
@@ -124,7 +162,7 @@ const DashboardAdmin: React.FC = () => {
            </div>
            <div className="space-y-6 max-h-[400px] overflow-y-auto scrollbar-hide pr-2 relative z-10">
               {logs.length > 0 ? logs.map((log, i) => (
-                <div key={log.id} className="flex items-start space-x-4 group animate-in slide-in-from-right-4 duration-500" style={{ animationDelay: `${i * 50}ms` }}>
+                <div key={log.id || i} className="flex items-start space-x-4 group animate-in slide-in-from-right-4 duration-500" style={{ animationDelay: `${i * 50}ms` }}>
                    <div className="w-10 h-10 bg-white/5 rounded-2xl flex items-center justify-center text-aerkm-gold group-hover:bg-aerkm-gold group-hover:text-[#0a192f] transition-all shrink-0">
                       <ArrowUpRight size={18} />
                    </div>
