@@ -24,8 +24,16 @@ const userSchema = new mongoose.Schema({
   prenom: { type: String, required: true },
 
   /* =====================
-     RESET PASSWORD
+     SECURITY & RECOVERY
   ===================== */
+  // Stockage des questions de sécurité
+  securityQuestions: [
+    {
+      question: { type: String, required: true },
+      answer: { type: String, required: true } // Stocké en minuscule et sans espaces (trim)
+    }
+  ],
+
   resetPasswordToken: String,
   resetPasswordExpires: Date,
 

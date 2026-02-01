@@ -46,9 +46,10 @@ router.post('/forgot-password-questions', async (req, res) => {
     }
 
     if (!user.securityQuestions || user.securityQuestions.length === 0) {
-      return res.status(400).json({ message: "Ce compte n'a pas de questions de sécurité configurées. Contactez l'administrateur." });
+      return res.status(400).json({ message: "Ce compte n'a pas de questions de sécurité configurées." });
     }
 
+    // On renvoie uniquement l'énoncé des questions
     const questions = user.securityQuestions.map(q => q.question);
     res.json({ questions });
   } catch (err) {
@@ -58,6 +59,7 @@ router.post('/forgot-password-questions', async (req, res) => {
 
 /* ================================
    🛡️ RÉCUPÉRATION : ÉTAPE 2 (VERIFY ANSWERS)
+   Validation flexible : au moins une réponse correcte débloque la suite
 ================================ */
 router.post('/verify-security-answers', async (req, res) => {
   try {
@@ -66,16 +68,20 @@ router.post('/verify-security-answers', async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé." });
 
-    const isVerified = user.securityQuestions.every((sq, idx) => {
+    // Vérifie si AU MOINS UNE réponse non-vide est correcte
+    const isVerified = user.securityQuestions.some((sq, idx) => {
       const userAnswer = (answers[idx] || '').toLowerCase().trim();
-      return userAnswer === sq.answer;
+      return userAnswer !== '' && userAnswer === sq.answer;
     });
 
     if (!isVerified) {
-      return res.status(401).json({ verified: false, message: "Une ou plusieurs réponses sont incorrectes." });
+      return res.status(401).json({ 
+        verified: false, 
+        message: "Réponse incorrecte. Répondez correctement à au moins une question pour continuer." 
+      });
     }
 
-    res.json({ verified: true, message: "Sécurité validée." });
+    res.json({ verified: true, message: "Identité confirmée." });
   } catch (err) {
     res.status(500).json({ message: "Erreur lors de la vérification." });
   }
@@ -91,13 +97,14 @@ router.post('/reset-password-security', async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé." });
 
-    const isVerified = user.securityQuestions.every((sq, idx) => {
+    // Double vérification de sécurité avant le reset final
+    const isVerified = user.securityQuestions.some((sq, idx) => {
       const userAnswer = (answers[idx] || '').toLowerCase().trim();
-      return userAnswer === sq.answer;
+      return userAnswer !== '' && userAnswer === sq.answer;
     });
 
     if (!isVerified) {
-      return res.status(401).json({ message: "Tentative invalide : réponses incorrectes." });
+      return res.status(401).json({ message: "Action refusée : validation de sécurité échouée." });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -106,7 +113,7 @@ router.post('/reset-password-security', async (req, res) => {
 
     await new Log({ 
       action: 'PASSWORD_RESET', 
-      details: `Mot de passe réinitialisé pour ${email}`, 
+      details: `Réinitialisation réussie pour ${email} via questions`, 
       adminId: 'SYSTEM' 
     }).save();
 
@@ -124,22 +131,44 @@ router.post('/register', async (req, res) => {
     const { email, telephone, nin, tuteur, prenom, nom, securityQuestions } = req.body;
     const fieldErrors = {};
 
+    // Validation des formats
     if (email && !emailRegex.test(email)) fieldErrors.email = "Format d'email invalide.";
-    if (telephone && !telRegex.test(telephone)) fieldErrors.telephone = "Format téléphone invalide.";
+    if (telephone && !telRegex.test(telephone)) fieldErrors.telephone = "Format téléphone invalide (Ex: 771234567).";
     if (nin && !ninRegex.test(nin)) fieldErrors.nin = "Le NIN doit comporter 13 à 15 chiffres.";
-
-    if (!securityQuestions || securityQuestions.length !== 3) {
-      fieldErrors.securityQuestions = "Les 3 questions de sécurité sont obligatoires.";
+    
+    if (tuteur) {
+      if (tuteur.email && !emailRegex.test(tuteur.email)) fieldErrors['tuteur.email'] = "Email du tuteur invalide.";
+      if (tuteur.telephone && !telRegex.test(tuteur.telephone)) fieldErrors['tuteur.telephone'] = "Téléphone du tuteur invalide.";
     }
 
-    if (Object.keys(fieldErrors).length > 0) return res.status(400).json({ errors: fieldErrors });
+    // Validation des questions de sécurité
+    if (!securityQuestions || securityQuestions.length !== 3) {
+      fieldErrors.securityQuestions = "Les 3 questions de sécurité sont obligatoires.";
+    } else {
+      securityQuestions.forEach((sq, idx) => {
+        if (!sq.question || !sq.answer || sq.answer.trim().length < 2) {
+          fieldErrors[`securityQuestions.${idx}`] = "Réponse trop courte.";
+        }
+      });
+    }
 
+    if (Object.keys(fieldErrors).length > 0) {
+      return res.status(400).json({ errors: fieldErrors });
+    }
+
+    // Vérification des Doublons
     const exists = await User.findOne({ $or: [{ email }, { nin }, { telephone }] });
-    if (exists) return res.status(409).json({ message: "Email, NIN ou téléphone déjà utilisé." });
+    if (exists) {
+        if (exists.email === email) fieldErrors.email = "Cet email est déjà utilisé.";
+        if (exists.nin === nin) fieldErrors.nin = "Ce NIN est déjà enregistré.";
+        if (exists.telephone === telephone) fieldErrors.telephone = "Ce téléphone est déjà utilisé.";
+        return res.status(409).json({ errors: fieldErrors });
+    }
 
     const hashedPassword = await bcrypt.hash(req.body.password || 'aerkm2024', 10);
     const numeroRecensement = `KM-${Math.floor(1000 + Math.random() * 9000)}-${new Date().getFullYear()}`;
 
+    // Normalisation des réponses (STOCKAGE PROPRE)
     const normalizedSecurityQuestions = securityQuestions.map(sq => ({
       question: sq.question,
       answer: sq.answer.toLowerCase().trim()
@@ -154,8 +183,17 @@ router.post('/register', async (req, res) => {
     });
 
     await newUser.save();
-    res.status(201).json({ message: "Inscription réussie" });
+
+    await new Log({ action: 'RECENSEMENT', details: `Inscription: ${prenom} ${nom}`, adminId: 'SYSTEM' }).save();
+    await new Notification({ titre: 'Nouveau membre', message: `${prenom} ${nom} s'est inscrit.`, type: 'SUCCESS' }).save();
+
+    const token = jwt.sign({ id: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    const userResponse = newUser.toObject();
+    delete userResponse.password;
+
+    return res.status(201).json({ token, user: userResponse });
   } catch (err) {
+    console.error('Register Error:', err);
     res.status(500).json({ message: 'Erreur serveur lors de l\'inscription.' });
   }
 });
