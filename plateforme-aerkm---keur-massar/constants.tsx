@@ -58,6 +58,18 @@ export const EVENT_TYPES = [
   "Autre"
 ];
 
+export const SECURITY_QUESTIONS = [
+  "Quel est le nom de votre premier animal de compagnie ?",
+  "Quelle est votre ville de naissance ?",
+  "Quel est le nom de jeune fille de votre mère ?",
+  "Quel était le nom de votre école primaire ?",
+  "Quel est votre plat préféré ?",
+  "Quel est le nom de votre meilleur ami d'enfance ?",
+  "Quelle est la marque de votre première voiture/moto ?",
+  "Dans quelle ville vos parents se sont-ils rencontrés ?",
+  "Quel est le nom de votre professeur préféré ?"
+];
+
 export const BUREAU_MEMBERS = [
   {
     role: "Président",
@@ -65,7 +77,7 @@ export const BUREAU_MEMBERS = [
     nom: "DIOP",
     telephone: "+221 77 123 45 67",
     email: "president@aerkm.sn",
-    image: "",
+    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400",
     color: "from-aerkm-blue to-blue-600"
   },
   {
@@ -74,7 +86,7 @@ export const BUREAU_MEMBERS = [
     nom: "SARR",
     telephone: "+221 78 987 65 43",
     email: "vice-president@aerkm.sn",
-    image: "",
+    image: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&q=80&w=400",
     color: "from-aerkm-brown to-amber-700"
   },
   {
@@ -83,7 +95,7 @@ export const BUREAU_MEMBERS = [
     nom: "BA",
     telephone: "+221 70 111 22 33",
     email: "secretariat@aerkm.sn",
-    image: "",
+    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400",
     color: "from-slate-700 to-slate-900"
   },
   {
@@ -92,7 +104,7 @@ export const BUREAU_MEMBERS = [
     nom: "FALL",
     telephone: "+221 76 444 55 66",
     email: "tresorerie@aerkm.sn",
-    image: "",
+    image: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&q=80&w=400",
     color: "from-aerkm-gold to-amber-500"
   },
   {
@@ -101,7 +113,7 @@ export const BUREAU_MEMBERS = [
     nom: "GUEYE",
     telephone: "+221 75 888 99 00",
     email: "social@aerkm.sn",
-    image: "",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
     color: "from-red-600 to-red-800"
   },
   {
@@ -110,7 +122,7 @@ export const BUREAU_MEMBERS = [
     nom: "NDIAYE",
     telephone: "+221 77 222 33 44",
     email: "pedagogie@aerkm.sn",
-    image: "",
+    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400",
     color: "from-green-600 to-green-800"
   }
 ];

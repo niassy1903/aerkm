@@ -1,16 +1,23 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, AuthState } from '../types';
+
+interface RegisterResponse {
+  success: boolean;
+  errors?: Record<string, string>;
+}
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  registerStudent: (data: any) => Promise<boolean>;
+  registerStudent: (data: any) => Promise<RegisterResponse>;
+  updateSessionUser: (userData: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = 'https://aerkm.onrender.com/api';
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api'
+  : 'https://aerkm.onrender.com/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>({
@@ -40,19 +47,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
       if (!response.ok) return false;
-
       const data = await response.json();
       localStorage.setItem('aerkm_token', data.token);
       localStorage.setItem('aerkm_user', JSON.stringify(data.user));
-      
       setState({ user: data.user, isAuthenticated: true, loading: false });
       return true;
-    } catch (err) {
-      console.error('Login error:', err);
-      return false;
-    }
+    } catch (err) { return false; }
   };
 
   const logout = () => {
@@ -61,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState({ user: null, isAuthenticated: false, loading: false });
   };
 
-  const registerStudent = async (data: any): Promise<boolean> => {
+  const registerStudent = async (data: any): Promise<RegisterResponse> => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
@@ -69,22 +70,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) return false;
-
       const result = await response.json();
+
+      if (response.status === 400 || response.status === 409) {
+        return { success: false, errors: result.errors };
+      }
+
+      if (!response.ok) return { success: false };
+
       localStorage.setItem('aerkm_token', result.token);
       localStorage.setItem('aerkm_user', JSON.stringify(result.user));
-      
       setState({ user: result.user, isAuthenticated: true, loading: false });
-      return true;
+      return { success: true };
     } catch (err) {
-      console.error('Registration error:', err);
-      return false;
+      return { success: false };
     }
   };
 
+  const updateSessionUser = (userData: User) => {
+    localStorage.setItem('aerkm_user', JSON.stringify(userData));
+    setState(prev => ({ ...prev, user: userData }));
+  };
+
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, registerStudent }}>
+    <AuthContext.Provider value={{ ...state, login, logout, registerStudent, updateSessionUser }}>
       {children}
     </AuthContext.Provider>
   );
