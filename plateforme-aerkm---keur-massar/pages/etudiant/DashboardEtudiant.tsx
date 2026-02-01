@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/StudentContext';
@@ -16,7 +17,8 @@ import {
   Clock,
   Sparkles,
   FileText,
-  Download
+  Download,
+  Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
@@ -42,12 +44,13 @@ const DashboardEtudiant: React.FC = () => {
   const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
   const generateFichePDF = () => {
+    // Sécurité supplémentaire : si student est null, on arrête
+    if (!student) return;
+
     setIsExporting(true);
     const doc = new jsPDF();
     
-    // Design de la fiche PDF
     const primaryColor = [30, 58, 138]; // aerkm-blue
-    const accentColor = [251, 191, 36]; // aerkm-gold
 
     // En-tête
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -66,7 +69,6 @@ const DashboardEtudiant: React.FC = () => {
     doc.setFontSize(16);
     doc.text(`Matricule : ${student.numeroRecensement || 'N/A'}`, 20, 60);
     
-    // Ligne de séparation
     doc.setDrawColor(230, 230, 230);
     doc.line(20, 65, 190, 65);
 
@@ -80,7 +82,6 @@ const DashboardEtudiant: React.FC = () => {
     doc.text(`Prénom : ${student.prenom || 'N/A'}`, 20, 90);
     doc.text(`Nom : ${student.nom || 'N/A'}`, 20, 98);
     
-    // Correction de la logique du Sexe
     let sexeLabel = 'Non renseigné';
     if (student.sexe === 'M') sexeLabel = 'Masculin';
     else if (student.sexe === 'F') sexeLabel = 'Féminin';
@@ -110,10 +111,16 @@ const DashboardEtudiant: React.FC = () => {
     doc.setFontSize(10);
     doc.text(`Téléphone : ${student.telephone || 'Non renseigné'}`, 20, 202);
     doc.text(`Email : ${student.email || 'N/A'}`, 20, 210);
-    doc.text(`Tuteur : ${student.tuteur || 'Non renseigné'}`, 20, 218);
-    doc.text(`Logé Amicale : ${student.logementAmicale ? 'OUI' : 'NON'}`, 20, 226);
+    
+    // Correction de l'accès au tuteur avec vérification de sécurité
+    const tuteurName = student.tuteur && typeof student.tuteur === 'object' 
+      ? (student.tuteur.nom || 'Non renseigné') 
+      : 'Non renseigné';
+      
+    doc.text(`Tuteur : ${tuteurName}`, 20, 218);
+    doc.text(`Logement Amicale : ${student.logementAmicale ? 'OUI' : 'NON'}`, 20, 226);
 
-    // Footer du PDF
+    // Footer
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     const date = new Date().toLocaleDateString('fr-FR');
@@ -123,16 +130,26 @@ const DashboardEtudiant: React.FC = () => {
     setIsExporting(false);
   };
 
+  // On évite tout crash si le student n'est pas encore chargé
+  if (!student) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="animate-spin text-aerkm-blue" size={48} />
+        <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Chargement de votre session...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-10 lg:px-8 space-y-10 animate-in fade-in duration-700 transition-colors duration-300">
       
-      {/* Header Profile - Modern & Impactful */}
-      <section className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] dark:shadow-none overflow-hidden border border-slate-100 dark:border-slate-800 transition-colors duration-300">
+      {/* Header Profile */}
+      <section className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm overflow-hidden border border-slate-100 dark:border-slate-800 transition-colors duration-300">
         <div className="bg-gradient-to-r from-aerkm-blue via-blue-700 to-blue-600 h-40 relative">
           <div className="absolute inset-0 opacity-20 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
           <div className="absolute -bottom-14 left-10 p-1.5 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl transition-colors duration-300">
             <div className="w-28 h-28 bg-slate-50 dark:bg-slate-800 text-aerkm-blue dark:text-white rounded-[1.8rem] flex items-center justify-center font-black text-4xl uppercase border-4 border-aerkm-blue/5">
-              {student.prenom ? student.prenom[0] : '?'}{student.nom ? student.nom[0] : '?'}
+              {student.prenom?.[0]}{student.nom?.[0]}
             </div>
           </div>
           <div className="absolute top-6 right-10 flex space-x-3">
@@ -158,7 +175,7 @@ const DashboardEtudiant: React.FC = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
             <button 
-              onClick={generateFichePDF}
+              onClick={generateFichePDF} 
               disabled={isExporting}
               className="px-8 py-4 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-black rounded-2xl transition-all shadow-sm hover:border-aerkm-blue dark:hover:border-aerkm-gold hover:text-aerkm-blue dark:hover:text-white transform hover:-translate-y-1 active:scale-95 flex items-center text-xs uppercase tracking-widest disabled:opacity-50"
             >
@@ -174,11 +191,9 @@ const DashboardEtudiant: React.FC = () => {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        
-        {/* Left Column: Academic & Help */}
         <div className="lg:col-span-2 space-y-10">
           
-          {/* Tableau Moderne des Événements */}
+          {/* Événements */}
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden flex flex-col h-full transition-colors duration-300">
             <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
               <div>
@@ -189,7 +204,6 @@ const DashboardEtudiant: React.FC = () => {
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest mt-1">Événements publiés officiellement</p>
               </div>
               
-              {/* Pagination Controls - Très Modernes */}
               <div className="flex items-center space-x-2">
                 <button 
                   onClick={goToPrevPage}
@@ -268,6 +282,7 @@ const DashboardEtudiant: React.FC = () => {
             </div>
           </div>
 
+          {/* Cursus */}
           <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
             <h2 className="text-xl font-black text-aerkm-blue dark:text-white mb-10 flex items-center uppercase tracking-tight">
               <School className="mr-3 text-aerkm-blue dark:text-aerkm-gold" size={22} /> Mon Cursus
@@ -291,9 +306,8 @@ const DashboardEtudiant: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Alerts & Quick Info */}
+        {/* Sidebar */}
         <div className="space-y-10">
-          
           <div className="bg-[#0a192f] dark:bg-slate-950 rounded-[3rem] p-10 text-white relative overflow-hidden shadow-2xl flex flex-col h-full transition-colors duration-300">
             <div className="absolute top-0 right-0 p-8 opacity-10">
                <ClipboardCheck size={180} />

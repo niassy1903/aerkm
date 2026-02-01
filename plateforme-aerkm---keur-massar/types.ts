@@ -3,13 +3,16 @@ export type UserRole = 'ADMIN' | 'ETUDIANT';
 
 export interface User {
   id: string;
-  // MongoDB internal identifier used in backend and context lookups
   _id?: string;
   email: string;
   role: UserRole;
   nom: string;
   prenom: string;
   password?: string;
+  isBureau?: boolean;
+  bureauPosition?: string;
+  imageUrl?: string;
+  telephone?: string;
 }
 
 export interface Etudiant extends User {
@@ -22,7 +25,12 @@ export interface Etudiant extends User {
   anneeUniversitaire: string;
   telephone: string;
   nin: string;
-  tuteur: string;
+  // Le tuteur est un objet en base de données, pas une simple string
+  tuteur: {
+    nom: string;
+    email?: string;
+    telephone: string;
+  };
   maladieHandicap: boolean;
   typeMaladieHandicap?: string;
   logementAmicale: boolean;
@@ -32,7 +40,6 @@ export interface Etudiant extends User {
 
 export interface Evenement {
   id: string;
-  // MongoDB internal identifier used in backend and context lookups
   _id?: string;
   titre: string;
   type: string;
