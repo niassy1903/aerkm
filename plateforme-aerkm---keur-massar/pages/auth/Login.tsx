@@ -22,7 +22,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
 
   // URL de l'API en production
-  const API_URL = 'http://localhost:5000/api';
+  const API_URL = 'https://aerkm.onrender.com/api';
 
   const api = 'https://aerkm.onrender.com/api';
 

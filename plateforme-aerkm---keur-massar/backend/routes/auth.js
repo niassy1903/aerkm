@@ -2,15 +2,11 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-
 import User from '../models/User.js';
 import Log from '../models/Log.js';
 import Notification from '../models/Notification.js';
-
 import {
   sendResetPasswordEmail,
-  sendRecensementEmail,
-  sendAdminRegistrationAlert,
 } from '../utils/mailer.js';
 
 const router = express.Router();
@@ -46,9 +42,9 @@ router.post('/register', async (req, res) => {
 
     await newUser.save();
 
-    /* 🔔 Emails NON BLOQUANTS */
-    sendRecensementEmail(newUser).catch(() => {});
-    sendAdminRegistrationAlert(newUser).catch(() => {});
+    /* 🔔 Emails SUPPRIMÉS comme demandé */
+    // sendRecensementEmail(newUser).catch(() => {});
+    // sendAdminRegistrationAlert(newUser).catch(() => {});
 
     await new Log({
       action: 'RECENSEMENT',
@@ -76,7 +72,6 @@ router.post('/register', async (req, res) => {
       token,
       user: userResponse,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -136,7 +131,6 @@ router.post('/admins', async (req, res) => {
     res.status(201).json({
       message: 'Administrateur créé avec succès.',
     });
-
   } catch {
     res.status(500).json({
       message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
@@ -157,7 +151,6 @@ router.put('/admins/:id', async (req, res) => {
     res.json({
       message: 'Administrateur mis à jour avec succès.',
     });
-
   } catch {
     res.status(400).json({
       message: "Impossible de mettre à jour l’administrateur.",
@@ -219,7 +212,6 @@ router.post('/login', async (req, res) => {
       token,
       user: userResponse,
     });
-
   } catch {
     res.status(500).json({
       message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
@@ -259,7 +251,6 @@ router.post('/forgot-password', async (req, res) => {
     res.json({
       message: 'Un lien de réinitialisation a été envoyé à votre adresse email.',
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -301,7 +292,6 @@ router.post('/reset-password', async (req, res) => {
     res.json({
       message: 'Mot de passe réinitialisé avec succès.',
     });
-
   } catch {
     res.status(500).json({
       message: 'Une erreur est survenue. Veuillez réessayer plus tard.',

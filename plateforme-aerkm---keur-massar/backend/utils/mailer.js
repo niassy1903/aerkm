@@ -1,3 +1,4 @@
+
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 
@@ -27,21 +28,12 @@ const transporter = nodemailer.createTransport({
       }
     : undefined,
   tls: {
-    rejectUnauthorized: false, // utile pour cloud comme Render
+    rejectUnauthorized: false,
   },
-  connectionTimeout: 30000, // 30s au lieu de 15
+  connectionTimeout: 30000,
   greetingTimeout: 30000,
   socketTimeout: 30000,
 });
-
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('⚠️ SMTP Gmail verification failed:', error);
-  } else {
-    console.log('✅ SMTP Gmail ready');
-  }
-});
-
 
 /* =======================
    🔐 RESET PASSWORD
@@ -93,14 +85,13 @@ export const sendRecensementEmail = async (student) => {
               <p style="margin:0; font-size:14px; color:#64748b; font-weight:bold;">Votre Matricule Unique</p>
               <p style="margin:5px 0 0 0; font-size:28px; color:#1e3a8a; font-weight:800;">${student.numeroRecensement}</p>
             </div>
-            <p>Vous pouvez désormais vous connecter à votre espace personnel en utilisant votre email.</p>
+            <p>Vous pouvez désormais vous connecter à votre espace personnel.</p>
             <div style="text-align:center; margin-top:30px;">
               <a href="https://aerkm.netlify.app/#/login" style="background-color:#fbbf24; color:#1e3a8a; padding:14px 28px; text-decoration:none; border-radius:10px; font-weight:bold; display:inline-block;">Accéder à mon espace</a>
             </div>
           </div>
           <div style="background-color:#f1f5f9; padding:20px; text-align:center; font-size:12px; color:#94a3b8;">
             <p style="margin:0;">© ${new Date().getFullYear()} AERKM Bambey • Excellence & Solidarité</p>
-            <p style="margin:5px 0 0 0;">Ceci est un message automatique, merci de ne pas y répondre.</p>
           </div>
         </div>
       `,
@@ -165,16 +156,9 @@ export const sendContactEmail = async ({ nom, email, sujet, message }) => {
             <div style="background-color:#f8fafc; border-radius:12px; padding:20px; margin-top:10px; border:1px solid #cbd5e1;">
               <p style="margin:0; white-space:pre-line;">${message}</p>
             </div>
-
-            <div style="text-align:center; margin-top:25px;">
-              <a href="mailto:${email}" style="background-color:#fbbf24; color:#1e3a8a; padding:12px 28px; text-decoration:none; border-radius:12px; font-weight:bold; display:inline-block;">
-                Répondre à ${nom}
-              </a>
-            </div>
           </div>
           <div style="background-color:#f1f5f9; padding:15px; text-align:center; font-size:12px; color:#94a3b8;">
             <p style="margin:0;">© ${new Date().getFullYear()} AERKM Bambey • Excellence & Solidarité</p>
-            <p style="margin:5px 0 0 0;">Ceci est un message automatique, merci de ne pas y répondre directement.</p>
           </div>
         </div>
       `,
@@ -185,4 +169,3 @@ export const sendContactEmail = async ({ nom, email, sujet, message }) => {
     return false;
   }
 };
-
