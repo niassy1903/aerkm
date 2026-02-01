@@ -11,6 +11,101 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ninRegex = /^\d{13,15}$/;
 const telRegex = /^(77|78|70|76|33)\d{7}$/;
 
+
+/* ================================
+   👤 ADMINS
+================================ */
+router.get('/admins', async (_, res) => {
+  try {
+    const admins = await User.find({ role: 'ADMIN' }).select('-password');
+    res.json(admins);
+  } catch {
+    res.status(500).json({
+      message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
+    });
+  }
+});
+
+router.post('/admins', async (req, res) => {
+  try {
+    const { email, password, prenom, nom } = req.body;
+
+    if (!email || !password || !prenom || !nom) {
+      return res.status(400).json({
+        message: 'Tous les champs obligatoires doivent être remplis.',
+      });
+    }
+
+    if (await User.findOne({ email })) {
+      return res.status(409).json({
+        message: 'Cet email est déjà utilisé.',
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newAdmin = new User({
+      email,
+      password: hashedPassword,
+      prenom,
+      nom,
+      role: 'ADMIN',
+    });
+
+    await newAdmin.save();
+
+    await new Log({
+      action: 'CREATION_ADMIN',
+      details: `Nouvel admin: ${prenom} ${nom}`,
+      adminId: 'ROOT',
+    }).save();
+
+    res.status(201).json({
+      message: 'Administrateur créé avec succès.',
+    });
+
+  } catch {
+    res.status(500).json({
+      message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
+    });
+  }
+});
+
+router.put('/admins/:id', async (req, res) => {
+  try {
+    const { password, ...data } = req.body;
+
+    if (password && password.trim()) {
+      data.password = await bcrypt.hash(password, 10);
+    }
+
+    await User.findByIdAndUpdate(req.params.id, data);
+
+    res.json({
+      message: 'Administrateur mis à jour avec succès.',
+    });
+
+  } catch {
+    res.status(400).json({
+      message: "Impossible de mettre à jour l’administrateur.",
+    });
+  }
+});
+
+router.delete('/admins/:id', async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({
+      message: 'Administrateur supprimé avec succès.',
+    });
+  } catch {
+    res.status(500).json({
+      message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
+    });
+  }
+});
+
+
 /* ================================
    🔐 LOGIN
 ================================ */
