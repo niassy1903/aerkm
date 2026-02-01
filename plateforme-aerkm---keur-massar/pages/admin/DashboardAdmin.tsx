@@ -1,16 +1,29 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useData } from '../../context/StudentContext';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   AreaChart, Area
 } from 'recharts';
-import { Users, Calendar, TrendingUp, Sparkles, GraduationCap, Clock, ArrowUpRight, History } from 'lucide-react';
+import { Users, Calendar, TrendingUp, Sparkles, GraduationCap, Clock, ArrowUpRight, History, RefreshCw } from 'lucide-react';
 import { UFR_LIST } from '../../constants';
 import { Link } from 'react-router-dom';
 
 const DashboardAdmin: React.FC = () => {
-  const { students, events, logs } = useData();
+  const { students, events, logs, fetchData } = useData();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchData();
+    } catch (error) {
+      console.error("Erreur lors de l'actualisation :", error);
+    } finally {
+      // Petite pause pour le feedback visuel
+      setTimeout(() => setIsRefreshing(false), 600);
+    }
+  };
 
   // Stats computation
   const stats = [
@@ -24,8 +37,6 @@ const DashboardAdmin: React.FC = () => {
     name: ufr.split('(')[0].replace('UFR ', ''),
     count: students.filter(s => s.ufr === ufr).length
   }));
-
-  const COLORS = ['#1e3a8a', '#78350f', '#fbbf24', '#3b82f6', '#ef4444'];
 
   return (
     <div className="space-y-10 p-8 lg:p-12 animate-in fade-in duration-700">
@@ -41,8 +52,13 @@ const DashboardAdmin: React.FC = () => {
           <Link to="/admin/statistiques" className="flex items-center space-x-2 bg-white border border-slate-100 px-6 py-3.5 rounded-2xl text-slate-700 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 shadow-sm transition-all active:scale-95">
              Voir l'Analyse
           </Link>
-          <button className="flex items-center space-x-2 bg-aerkm-blue text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-800 shadow-xl shadow-aerkm-blue/20 transition-all active:scale-95">
-             Actualiser les données
+          <button 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center space-x-3 bg-aerkm-blue text-white px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-800 shadow-xl shadow-aerkm-blue/20 transition-all active:scale-95 disabled:opacity-70"
+          >
+            <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+            <span>{isRefreshing ? 'Actualisation...' : 'Actualiser les données'}</span>
           </button>
         </div>
       </div>
@@ -82,7 +98,7 @@ const DashboardAdmin: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={ufrData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 9, fontWeight: 'black', textTransform: 'uppercase'}} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 9, fontWeight: 'black'}} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 9, fontWeight: 'black'}} />
                 <Tooltip 
                   cursor={{fill: '#f8fafc', radius: 10}}
