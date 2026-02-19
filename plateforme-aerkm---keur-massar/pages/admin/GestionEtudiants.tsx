@@ -15,7 +15,8 @@ import {
   Users,
   Home,
   Activity,
-  Download
+  Download,
+  Eye
 } from 'lucide-react';
 import { UFR_LIST } from '../../constants';
 import { Etudiant } from '../../types';
@@ -27,6 +28,7 @@ const GestionEtudiants: React.FC = () => {
   const [ufrFilter, setUfrFilter] = useState('Tous');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Etudiant | null>(null);
+  const [viewingStudent, setViewingStudent] = useState<Etudiant | null>(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -59,6 +61,10 @@ const GestionEtudiants: React.FC = () => {
   const handleEdit = (student: Etudiant) => {
     setEditingStudent({ ...student });
     setIsModalOpen(true);
+  };
+
+  const handleViewProfile = (student: Etudiant) => {
+    setViewingStudent(student);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -205,6 +211,9 @@ const GestionEtudiants: React.FC = () => {
                   </td>
                   <td className="px-6 py-3 text-right">
                     <div className="flex items-center justify-end space-x-1.5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-1 group-hover:translate-x-0">
+                      <button onClick={() => handleViewProfile(s)} className="p-2 bg-white text-green-600 border border-slate-100 rounded-lg shadow-sm hover:bg-green-600 hover:text-white transition-all active:scale-90" title="Voir Profil">
+                        <Eye size={12} /> 
+                      </button>
                       <button 
                         onClick={() => handleEdit(s)} 
                         className="p-2 bg-white text-blue-600 border border-slate-100 rounded-lg shadow-sm hover:bg-blue-600 hover:text-white transition-all active:scale-90"
@@ -287,6 +296,196 @@ const GestionEtudiants: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Profile View Modal */}
+      {viewingStudent && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-aerkm-blue/40 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-3xl overflow-hidden animate-in zoom-in duration-300 border border-white/20 max-h-[90vh] overflow-y-auto">
+            <div className="bg-aerkm-blue p-6 text-white flex justify-between items-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-6 opacity-10">
+                <Eye size={100} />
+              </div>
+              <div className="relative z-10">
+                <h2 className="text-xl font-black tracking-tight uppercase">Profil Étudiant</h2>
+                <p className="text-blue-100/60 text-[9px] font-black uppercase tracking-[0.2em] mt-0.5">{viewingStudent.numeroRecensement}</p>
+              </div>
+              <button onClick={() => setViewingStudent(null)} className="relative z-10 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              {/* Informations Personnelles */}
+              <div className="bg-slate-50 p-5 rounded-[1.5rem] space-y-4 border border-slate-100">
+                <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">Informations Personnelles</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Prénom</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.prenom}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Nom</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.nom}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Sexe</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.sexe === 'F' ? 'Féminin' : 'Masculin'}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Date de Naissance</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {new Date(viewingStudent.dateNaissance).toLocaleDateString('fr-FR')}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Lieu d'Origine</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.lieuOrigine}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">NIN</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.nin}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informations Académiques */}
+              <div className="bg-slate-50 p-5 rounded-[1.5rem] space-y-4 border border-slate-100">
+                <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">Informations Académiques</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">UFR / Institut</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.ufr}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Filière</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.filiere}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Niveau</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.niveau}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Année Universitaire</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.anneeUniversitaire}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informations de Contact */}
+              <div className="bg-slate-50 p-5 rounded-[1.5rem] space-y-4 border border-slate-100">
+                <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">Informations de Contact</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Téléphone</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.telephone}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Email</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.email}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informations du Tuteur */}
+              <div className="bg-slate-50 p-5 rounded-[1.5rem] space-y-4 border border-slate-100">
+                <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">Informations du Tuteur</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Nom du Tuteur</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.tuteur.nom}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Téléphone du Tuteur</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.tuteur.telephone}
+                    </div>
+                  </div>
+                  {viewingStudent.tuteur.email && (
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Email du Tuteur</label>
+                      <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                        {viewingStudent.tuteur.email}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Statut Social */}
+              <div className="bg-slate-50 p-5 rounded-[1.5rem] space-y-4 border border-slate-100">
+                <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">Statut Social</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Logement Amicale</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.logementAmicale ? 'Oui' : 'Non'}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Besoin Sanitaire</label>
+                    <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                      {viewingStudent.maladieHandicap ? 'Oui' : 'Non'}
+                    </div>
+                  </div>
+                  {viewingStudent.maladieHandicap && viewingStudent.typeMaladieHandicap && (
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Type de Handicap/Maladie</label>
+                      <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                        {viewingStudent.typeMaladieHandicap}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Date d'Inscription */}
+              <div className="bg-slate-50 p-5 rounded-[1.5rem] space-y-4 border border-slate-100">
+                <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">Informations Système</h3>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2">Date d'Inscription</label>
+                  <div className="w-full px-5 py-3.5 bg-white border-2 border-slate-100 rounded-xl font-bold text-xs text-slate-700">
+                    {new Date(viewingStudent.dateInscription).toLocaleDateString('fr-FR')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setViewingStudent(null)} 
+                  className="flex-1 py-4 bg-aerkm-blue text-white font-black rounded-xl hover:bg-aerkm-blue/90 shadow-xl transition-all uppercase tracking-widest text-[9px] active:scale-95"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Editing Modal - Enhanced */}
       {isModalOpen && editingStudent && (
