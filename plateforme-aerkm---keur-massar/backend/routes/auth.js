@@ -26,9 +26,19 @@ router.get('/admins', async (_, res) => {
   }
 });
 
+// Added: Route for bureau members (Preserved for frontend compatibility)
+router.get('/bureau', async (req, res) => {
+  try {
+    const bureau = await User.find({ role: 'ADMIN', isBureau: true }).select('-password');
+    res.json(bureau);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur lors de la récupération du bureau." });
+  }
+});
+
 router.post('/admins', async (req, res) => {
   try {
-    const { email, password, prenom, nom } = req.body;
+    const { email, password, prenom, nom, isBureau, bureauPosition } = req.body;
 
     if (!email || !password || !prenom || !nom) {
       return res.status(400).json({
@@ -50,6 +60,8 @@ router.post('/admins', async (req, res) => {
       prenom,
       nom,
       role: 'ADMIN',
+      isBureau: isBureau || false,
+      bureauPosition: bureauPosition || ''
     });
 
     await newAdmin.save();
