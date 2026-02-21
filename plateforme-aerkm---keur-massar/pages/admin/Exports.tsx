@@ -24,7 +24,7 @@ const Exports: React.FC = () => {
     s.ufr,
     s.filiere,
     s.niveau,
-    s.tuteur,
+    s.tuteur.nom,
     s.maladieHandicap ? 'OUI' : 'NON',
     s.logementAmicale ? 'OUI' : 'NON'
   ]);

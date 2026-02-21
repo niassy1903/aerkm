@@ -389,6 +389,49 @@ const Inscription: React.FC = () => {
                   </div>
                   <ErrorLabel name="confirmPassword" />
                 </div>
+                <div className="space-y-3 group md:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-2">Sexe *</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, sexe: 'M' })}
+                      className={`flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all duration-300 group/male ${
+                        formData.sexe === 'M'
+                          ? 'border-aerkm-blue bg-aerkm-blue/5 shadow-lg shadow-aerkm-blue/5 scale-[1.01]'
+                          : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-200'
+                      }`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 transition-all duration-300 ${
+                        formData.sexe === 'M' ? 'bg-aerkm-blue text-white rotate-6' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover/male:scale-110'
+                      }`}>
+                        <User size={24} />
+                      </div>
+                      <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${
+                        formData.sexe === 'M' ? 'text-aerkm-blue' : 'text-slate-500'
+                      }`}>Masculin</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, sexe: 'F' })}
+                      className={`flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition-all duration-300 group/female ${
+                        formData.sexe === 'F'
+                          ? 'border-pink-500 bg-pink-500/5 shadow-lg shadow-pink-500/5 scale-[1.01]'
+                          : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-200'
+                      }`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 transition-all duration-300 ${
+                        formData.sexe === 'F' ? 'bg-pink-500 text-white -rotate-6' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover/female:scale-110'
+                      }`}>
+                        <User size={24} />
+                      </div>
+                      <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${
+                        formData.sexe === 'F' ? 'text-pink-500' : 'text-slate-500'
+                      }`}>Féminin</span>
+                    </button>
+                  </div>
+                  <ErrorLabel name="sexe" />
+                </div>
               </div>
             </section>
 

@@ -9,7 +9,8 @@ import {
   LogOut,
   UserCog,
   History,
-  Settings
+  Settings,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,6 +25,7 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ collapsed }) => {
     { to: '/admin', icon: <LayoutDashboard size={24} />, label: 'Tableau de bord' },
     { to: '/admin/etudiants', icon: <Users size={24} />, label: 'Étudiants' },
     { to: '/admin/evenements', icon: <CalendarRange size={24} />, label: 'Événements' },
+    { to: '/admin/bureau', icon: <ShieldCheck size={24} />, label: 'Bureau Exécutif' },
     { to: '/admin/utilisateurs', icon: <UserCog size={24} />, label: 'Admins' },
     { to: '/admin/statistiques', icon: <BarChart3 size={24} />, label: 'Statistiques' },
     { to: '/admin/logs', icon: <History size={24} />, label: 'Historique' },

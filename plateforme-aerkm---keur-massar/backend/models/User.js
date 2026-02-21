@@ -24,6 +24,13 @@ const userSchema = new mongoose.Schema({
   prenom: { type: String, required: true },
 
   /* =====================
+     BUREAU MANAGEMENT (Preserved)
+  ===================== */
+  isBureau: { type: Boolean, default: false },
+  bureauPosition: { type: String, default: '' },
+  imageUrl: { type: String, default: '' },
+
+  /* =====================
      SECURITY & RECOVERY
   ===================== */
   // Stockage des questions de sécurité
