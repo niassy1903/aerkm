@@ -9,8 +9,6 @@ export interface User {
   nom: string;
   prenom: string;
   password?: string;
-  isBureau?: boolean;
-  bureauPosition?: string;
   imageUrl?: string;
   telephone?: string;
 }

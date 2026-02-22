@@ -117,16 +117,26 @@ const GestionBureau: React.FC = () => {
 
     try {
       if (editingMember) {
-        await updateBureauMember(editingMember._id || '', formData);
+        await updateBureauMember({ ...editingMember, ...formData });
       } else {
         if (!selectedStudentId) {
           setError('Veuillez sélectionner un étudiant.');
           setLoading(false);
           return;
         }
+        const selectedStudent = students.find(s => s._id === selectedStudentId);
+        if (!selectedStudent) {
+          setError('Étudiant non trouvé.');
+          setLoading(false);
+          return;
+        }
         const success = await addBureauMember({
-          studentId: selectedStudentId,
-          ...formData
+          ...selectedStudent,
+          position: formData.position,
+          mandat: formData.mandat,
+          order: formData.order,
+          bio: formData.bio,
+          isActive: true
         });
         if (!success) {
           setError("Erreur lors de l'ajout. Cet étudiant est peut-être déjà membre.");

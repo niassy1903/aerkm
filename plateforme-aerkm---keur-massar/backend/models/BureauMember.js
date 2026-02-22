@@ -29,5 +29,7 @@ const bureauMemberSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+bureauMemberSchema.index({ isActive: 1, order: 1 });
+
 const BureauMember = mongoose.model('BureauMember', bureauMemberSchema);
 export default BureauMember;

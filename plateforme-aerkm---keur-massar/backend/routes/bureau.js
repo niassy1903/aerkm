@@ -10,8 +10,12 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const members = await BureauMember.find({ isActive: true })
-      .populate('studentId', 'prenom nom email telephone imageUrl')
-      .sort({ order: 1 });
+      .populate({
+        path: 'studentId',
+        select: 'prenom nom email telephone imageUrl',
+      })
+      .sort({ order: 1 })
+      .lean();
     
     // Flatten the response for easier frontend usage
     const flattened = members.map(m => ({
@@ -21,7 +25,7 @@ router.get('/', async (req, res) => {
       isActive: m.isActive,
       order: m.order,
       bio: m.bio,
-      ...m.studentId.toObject()
+      ...m.studentId
     }));
 
     res.json(flattened);
@@ -41,8 +45,12 @@ router.get('/admin', async (req, res) => {
     }
 
     let members = await BureauMember.find(query)
-      .populate('studentId', 'prenom nom email telephone')
-      .sort({ order: 1 });
+      .populate({
+        path: 'studentId',
+        select: 'prenom nom email telephone',
+      })
+      .sort({ order: 1 })
+      .lean();
 
     if (search) {
       const s = search.toLowerCase();
@@ -64,7 +72,7 @@ router.get('/admin', async (req, res) => {
         mandat: m.mandat,
         isActive: m.isActive,
         order: m.order,
-        ...m.studentId.toObject()
+        ...m.studentId
       })),
       total,
       pages: Math.ceil(total / limit)

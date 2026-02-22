@@ -23,11 +23,6 @@ const userSchema = new mongoose.Schema({
   nom: { type: String, required: true },
   prenom: { type: String, required: true },
 
-  /* =====================
-     BUREAU MANAGEMENT (Preserved)
-  ===================== */
-  isBureau: { type: Boolean, default: false },
-  bureauPosition: { type: String, default: '' },
   imageUrl: { type: String, default: '' },
 
   /* =====================
