@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Etudiant, Evenement, User, Notification, ActivityLog } from '../types';
 
@@ -30,7 +29,7 @@ interface StudentContextType {
   markNotifAsRead: (id: string) => Promise<void>;
   clearNotifications: () => Promise<void>;
   updateSettings: (newSettings: SystemSettings) => Promise<void>;
-  updateBureauStatus: (userId: string, isBureau: boolean, position: string) => Promise<void>;
+  updateBureauStatus: (userId: string, isBureau: boolean, bureauData?: Partial<User>) => Promise<void>;
   fetchData: () => Promise<void>;
 }
 
@@ -55,18 +54,35 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const fetchData = async () => {
     console.log("🔄 Actualisation globale des données...");
     try {
-      // 1. Fetch public data
-      const resSettings = await fetch(`${API_BASE_URL}/settings`);
-      if (resSettings.ok) {
-        const settingsData = await resSettings.json();
-        setSettings(settingsData);
-      }
+      const safeFetch = async (url: string, options?: RequestInit) => {
+        try {
+          const res = await fetch(url, options);
+          if (!res.ok) {
+            console.warn(`⚠️ Fetch failed for ${url}: ${res.status}`);
+            return null;
+          }
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            return await res.json();
+          }
+          console.warn(`⚠️ Expected JSON for ${url} but got ${contentType}`);
+          return null;
+        } catch (e) {
+          console.error(`❌ Network error for ${url}:`, e);
+          return null;
+        }
+      };
 
-      const resEvents = await fetch(`${API_BASE_URL}/events`);
-      if (resEvents.ok) {
-        const eventsData = await resEvents.json();
-        setEvents(eventsData);
-      }
+      // 1. Fetch public data
+      const [settingsData, eventsData, bureauData] = await Promise.all([
+        safeFetch(`${API_BASE_URL}/settings`),
+        safeFetch(`${API_BASE_URL}/events`),
+        safeFetch(`${API_BASE_URL}/auth/bureau`)
+      ]);
+
+      if (settingsData) setSettings(settingsData);
+      if (eventsData) setEvents(eventsData);
+      if (bureauData) setBureauMembers(bureauData);
 
       // 2. Fetch protected data if logged in as ADMIN
       const savedUser = localStorage.getItem('aerkm_user');
@@ -75,58 +91,30 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (user && user.role === 'ADMIN') {
           const h = getHeaders();
           
-          const [resS, resA, resN, resL, resB] = await Promise.all([
-            fetch(`${API_BASE_URL}/students`, { headers: h }),
-            fetch(`${API_BASE_URL}/auth/admins`, { headers: h }),
-            fetch(`${API_BASE_URL}/notifications`, { headers: h }),
-            fetch(`${API_BASE_URL}/logs`, { headers: h }),
-            fetch(`${API_BASE_URL}/auth/bureau`, { headers: h })
+          const [studentsData, adminsData, notificationsData, logsData, bureauAllData] = await Promise.all([
+            safeFetch(`${API_BASE_URL}/students`, { headers: h }),
+            safeFetch(`${API_BASE_URL}/auth/admins`, { headers: h }),
+            safeFetch(`${API_BASE_URL}/notifications`, { headers: h }),
+            safeFetch(`${API_BASE_URL}/logs`, { headers: h }),
+            safeFetch(`${API_BASE_URL}/auth/bureau`, { headers: h })
           ]);
 
-          if (resS.ok) {
-            const data = await resS.json();
-            setStudents(Array.isArray(data) ? data : []);
-          }
-          
-          if (resA.ok) {
-            const data = await resA.json();
-            setAdmins(Array.isArray(data) ? data : []);
-          }
-          
-          if (resN.ok) {
-            const data = await resN.json();
-            setNotifications(Array.isArray(data) ? data : []);
-          }
-          
-          if (resL.ok) {
-            const data = await resL.json();
-            setLogs(Array.isArray(data) ? data : []);
-          }
-          
-          if (resB.ok) {
-            const data = await resB.json();
-            setBureauMembers(Array.isArray(data) ? data : []);
-          }
+          if (studentsData) setStudents(studentsData);
+          if (adminsData) setAdmins(adminsData);
+          if (notificationsData) setNotifications(notificationsData);
+          if (logsData) setLogs(logsData);
+          if (bureauAllData) setBureauMembers(bureauAllData);
         }
       }
       console.log("✅ Données actualisées avec succès");
     } catch (err) { 
-      console.error("❌ Erreur lors du rafraîchissement:", err); 
+      console.error("❌ Erreur critique lors du rafraîchissement:", err); 
     }
   };
 
-  useEffect(() => { 
-    fetchData(); 
+  useEffect(() => {
+    fetchData();
   }, []);
-
-  const updateBureauStatus = async (userId: string, isBureau: boolean, position: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/admins/${userId}`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify({ isBureau, bureauPosition: position })
-    });
-    if (res.ok) await fetchData();
-  };
 
   const addEvent = async (event: any) => {
     const res = await fetch(`${API_BASE_URL}/events`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(event) });
@@ -169,6 +157,15 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (res.ok) await fetchData();
   };
 
+  const updateBureauStatus = async (userId: string, isBureau: boolean, bureauData?: Partial<User>) => {
+    const res = await fetch(`${API_BASE_URL}/auth/admins/${userId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ isBureau, ...bureauData })
+    });
+    if (res.ok) await fetchData();
+  };
+
   const markNotifAsRead = async (id: string) => {
     const res = await fetch(`${API_BASE_URL}/notifications/${id}`, { method: 'PUT', headers: getHeaders() });
     if (res.ok) await fetchData();
@@ -188,9 +185,9 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   return (
-    <StudentContext.Provider value={{ 
+    <StudentContext.Provider value={{
       students, events, admins, bureauMembers, notifications, logs, settings,
-      addEvent, updateEvent, deleteEvent, 
+      addEvent, updateEvent, deleteEvent,
       updateStudent, deleteStudent,
       addAdmin, updateAdmin, deleteAdmin,
       markNotifAsRead, clearNotifications,

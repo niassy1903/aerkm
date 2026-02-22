@@ -23,6 +23,14 @@ const userSchema = new mongoose.Schema({
   nom: { type: String, required: true },
   prenom: { type: String, required: true },
 
+  imageUrl: { type: String, default: '' },
+
+  isBureau: { type: Boolean, default: false },
+  bureauPosition: { type: String, default: '' },
+  bureauMandat: { type: String, default: '' },
+  bureauOrder: { type: Number, default: 0 },
+  bureauBio: { type: String, default: '' },
+
   /* =====================
      SECURITY & RECOVERY
   ===================== */

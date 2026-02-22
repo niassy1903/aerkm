@@ -26,6 +26,15 @@ router.get('/admins', async (_, res) => {
   }
 });
 
+router.get('/bureau', async (_, res) => {
+  try {
+    const members = await User.find({ isBureau: true }).select('-password');
+    res.json(members);
+  } catch {
+    res.status(500).json({ message: 'Erreur lors de la récupération du bureau.' });
+  }
+});
+
 router.post('/admins', async (req, res) => {
   try {
     const { email, password, prenom, nom } = req.body;
@@ -49,7 +58,7 @@ router.post('/admins', async (req, res) => {
       password: hashedPassword,
       prenom,
       nom,
-      role: 'ADMIN',
+      role: 'ADMIN'
     });
 
     await newAdmin.save();
@@ -79,15 +88,23 @@ router.put('/admins/:id', async (req, res) => {
       data.password = await bcrypt.hash(password, 10);
     }
 
-    await User.findByIdAndUpdate(req.params.id, data);
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, data, { new: true });
+
+    if (data.isBureau !== undefined) {
+      await new Log({
+        action: 'BUREAU_STATUS_UPDATE',
+        details: `Statut bureau de ${updatedUser.prenom} ${updatedUser.nom} mis à jour: ${data.isBureau ? 'OUI' : 'NON'} (${data.bureauPosition || 'N/A'})`,
+        adminId: 'ADMIN'
+      }).save();
+    }
 
     res.json({
-      message: 'Administrateur mis à jour avec succès.',
+      message: 'Utilisateur mis à jour avec succès.',
     });
 
   } catch {
     res.status(400).json({
-      message: "Impossible de mettre à jour l’administrateur.",
+      message: "Impossible de mettre à jour l’utilisateur.",
     });
   }
 });

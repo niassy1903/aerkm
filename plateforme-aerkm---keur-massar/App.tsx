@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -25,6 +24,7 @@ import DashboardAdmin from './pages/admin/DashboardAdmin';
 import GestionEvenements from './pages/admin/GestionEvenements';
 import GestionEtudiants from './pages/admin/GestionEtudiants';
 import GestionAdmins from './pages/admin/GestionAdmins';
+import GestionBureau from './pages/admin/GestionBureau';
 import Statistiques from './pages/admin/Statistiques';
 import Exports from './pages/admin/Exports';
 import Logs from './pages/admin/Logs';
@@ -190,9 +190,6 @@ const Footer = () => (
   </footer>
 );
 
-
-
-
 const AppLayout = () => {
   const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -211,6 +208,7 @@ const AppLayout = () => {
               <Route path="/admin" element={<ProtectedRoute allowedRole="ADMIN"><DashboardAdmin /></ProtectedRoute>} />
               <Route path="/admin/evenements" element={<ProtectedRoute allowedRole="ADMIN"><GestionEvenements /></ProtectedRoute>} />
               <Route path="/admin/etudiants" element={<ProtectedRoute allowedRole="ADMIN"><GestionEtudiants /></ProtectedRoute>} />
+              <Route path="/admin/bureau" element={<ProtectedRoute allowedRole="ADMIN"><GestionBureau /></ProtectedRoute>} />
               <Route path="/admin/utilisateurs" element={<ProtectedRoute allowedRole="ADMIN"><GestionAdmins /></ProtectedRoute>} />
               <Route path="/admin/statistiques" element={<ProtectedRoute allowedRole="ADMIN"><Statistiques /></ProtectedRoute>} />
               <Route path="/admin/exports" element={<ProtectedRoute allowedRole="ADMIN"><Exports /></ProtectedRoute>} />
@@ -226,7 +224,7 @@ const AppLayout = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen relative">
+    <div className="flex flex-col min-h-screen relative dark:bg-slate-950 transition-colors duration-300">
       {!isAuthPage && <Navbar />}
       <main className={`flex-grow ${isHomePage || isAuthPage ? '' : 'pt-24 lg:pt-32'}`}>
         <Routes>
@@ -249,13 +247,13 @@ const AppLayout = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <StudentProvider>
-        <Router>
-          <AppLayout />
-        </Router>
-      </StudentProvider>
-    </AuthProvider>
+      <AuthProvider>
+        <StudentProvider>
+          <Router>
+            <AppLayout />
+          </Router>
+        </StudentProvider>
+      </AuthProvider>
   );
 };
 
