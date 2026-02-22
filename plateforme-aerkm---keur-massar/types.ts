@@ -69,6 +69,14 @@ export interface ActivityLog {
   adminId: string;
 }
 
+export interface BureauMember extends User {
+  position: string;
+  mandat: string;
+  order: number;
+  isActive: boolean;
+  bio?: string;
+}
+
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;

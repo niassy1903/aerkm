@@ -20,44 +20,54 @@ import {
   Save,
   User
 } from 'lucide-react';
-import { User as UserType } from '../../types';
+import { User as UserType, BureauMember } from '../../types';
 
 const GestionBureau: React.FC = () => {
-  const { admins, bureauMembers, updateBureauStatus, addAdmin, updateAdmin, deleteAdmin } = useData();
+  const { students, bureauMembers, addBureauMember, updateBureauMember, deleteBureauMember } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [positionFilter, setPositionFilter] = useState('Tous');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<UserType | null>(null);
-  const [viewingMember, setViewingMember] = useState<UserType | null>(null);
+  const [editingMember, setEditingMember] = useState<BureauMember | null>(null);
+  const [viewingMember, setViewingMember] = useState<BureauMember | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Student selection for new member
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [studentSearch, setStudentSearch] = useState('');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
   const [formData, setFormData] = useState({
-    prenom: '',
-    nom: '',
-    email: '',
-    telephone: '',
-    password: '',
-    bureauPosition: '',
-    role: 'ADMIN' as const,
-    isBureau: true
+    position: '',
+    mandat: '2024-2025',
+    order: 0,
+    bio: ''
   });
 
+  const filteredStudents = useMemo(() => {
+    if (!studentSearch) return [];
+    return students.filter(s => 
+      !bureauMembers.some(m => m._id === s._id || m.email === s.email) &&
+      (`${s.prenom} ${s.nom}`.toLowerCase().includes(studentSearch.toLowerCase()) ||
+       s.email.toLowerCase().includes(studentSearch.toLowerCase()))
+    ).slice(0, 5);
+  }, [students, studentSearch, bureauMembers]);
+
   const positions = useMemo(() => {
-    const p = new Set(bureauMembers.map(m => m.bureauPosition).filter(Boolean));
+    const p = new Set(bureauMembers.map(m => m.position).filter(Boolean));
     return ['Tous', ...Array.from(p)];
   }, [bureauMembers]);
 
   const filteredBureau = useMemo(() => {
     return bureauMembers.filter(m => {
       const matchesSearch = `${m.prenom} ${m.nom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            m.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter = positionFilter === 'Tous' || m.bureauPosition === positionFilter;
+                            m.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            m.position.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = positionFilter === 'Tous' || m.position === positionFilter;
       return matchesSearch && matchesFilter;
     });
   }, [bureauMembers, searchTerm, positionFilter]);
@@ -71,37 +81,31 @@ const GestionBureau: React.FC = () => {
 
   const handleOpenAddModal = () => {
     setEditingMember(null);
+    setSelectedStudentId('');
+    setStudentSearch('');
     setFormData({
-      prenom: '',
-      nom: '',
-      email: '',
-      telephone: '',
-      password: '',
-      bureauPosition: '',
-      role: 'ADMIN',
-      isBureau: true
+      position: '',
+      mandat: '2024-2025',
+      order: bureauMembers.length,
+      bio: ''
     });
     setError('');
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (member: UserType) => {
+  const handleOpenEditModal = (member: any) => {
     setEditingMember(member);
     setFormData({
-      prenom: member.prenom,
-      nom: member.nom,
-      email: member.email,
-      telephone: member.telephone || '',
-      password: '', // On ne change pas le mot de passe par défaut
-      bureauPosition: member.bureauPosition || '',
-      role: member.role as 'ADMIN',
-      isBureau: true
+      position: member.position || '',
+      mandat: member.mandat || '2024-2025',
+      order: member.order || 0,
+      bio: member.bio || ''
     });
     setError('');
     setIsModalOpen(true);
   };
 
-  const handleOpenViewModal = (member: UserType) => {
+  const handleOpenViewModal = (member: any) => {
     setViewingMember(member);
     setIsViewModalOpen(true);
   };
@@ -113,20 +117,19 @@ const GestionBureau: React.FC = () => {
 
     try {
       if (editingMember) {
-        // Update
-        const updateData = { ...formData };
-        if (!updateData.password) delete (updateData as any).password;
-        await updateAdmin({ ...editingMember, ...updateData });
+        await updateBureauMember(editingMember._id || '', formData);
       } else {
-        // Add
-        if (!formData.password) {
-          setError('Le mot de passe est obligatoire pour un nouveau membre.');
+        if (!selectedStudentId) {
+          setError('Veuillez sélectionner un étudiant.');
           setLoading(false);
           return;
         }
-        const success = await addAdmin(formData);
+        const success = await addBureauMember({
+          studentId: selectedStudentId,
+          ...formData
+        });
         if (!success) {
-          setError("Erreur lors de l'ajout. L'email est peut-être déjà utilisé.");
+          setError("Erreur lors de l'ajout. Cet étudiant est peut-être déjà membre.");
           setLoading(false);
           return;
         }
@@ -142,7 +145,7 @@ const GestionBureau: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm("Supprimer définitivement ce membre du bureau ?")) {
       setLoading(true);
-      await deleteAdmin(id);
+      await deleteBureauMember(id);
       setLoading(false);
     }
   };
@@ -248,7 +251,7 @@ const GestionBureau: React.FC = () => {
                   </td>
                   <td className="px-8 py-6">
                     <span className="px-4 py-1.5 bg-aerkm-gold/10 text-aerkm-brown rounded-full text-[10px] font-black uppercase tracking-widest border border-aerkm-gold/20">
-                      {m.bureauPosition || 'Non défini'}
+                      {m.position || 'Non défini'}
                     </span>
                   </td>
                   <td className="px-8 py-6">
@@ -378,68 +381,84 @@ const GestionBureau: React.FC = () => {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Prénom *</label>
-                  <input 
-                    type="text" required
-                    value={formData.prenom}
-                    onChange={e => setFormData({...formData, prenom: e.target.value})}
-                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all"
-                    placeholder="Ex: Moussa"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nom *</label>
-                  <input 
-                    type="text" required
-                    value={formData.nom}
-                    onChange={e => setFormData({...formData, nom: e.target.value})}
-                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all"
-                    placeholder="Ex: DIOP"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email *</label>
-                  <input 
-                    type="email" required
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all"
-                    placeholder="moussa.diop@bambey.sn"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Téléphone</label>
-                  <input 
-                    type="tel"
-                    value={formData.telephone}
-                    onChange={e => setFormData({...formData, telephone: e.target.value})}
-                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all"
-                    placeholder="770000000"
-                  />
-                </div>
+                {!editingMember && (
+                  <div className="space-y-2 md:col-span-2 relative">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sélectionner un étudiant *</label>
+                    <div className="relative">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                      <input 
+                        type="text"
+                        value={studentSearch}
+                        onChange={e => { setStudentSearch(e.target.value); setSelectedStudentId(''); }}
+                        className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all"
+                        placeholder="Rechercher par nom ou email..."
+                      />
+                    </div>
+                    {filteredStudents.length > 0 && !selectedStudentId && (
+                      <div className="absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden">
+                        {filteredStudents.map(s => (
+                          <button
+                            key={s._id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedStudentId(s._id || '');
+                              setStudentSearch(`${s.prenom} ${s.nom} (${s.email})`);
+                            }}
+                            className="w-full px-6 py-4 text-left hover:bg-slate-50 flex items-center justify-between border-b border-slate-50 last:border-0"
+                          >
+                            <div>
+                              <p className="text-sm font-black text-slate-900 uppercase">{s.prenom} {s.nom}</p>
+                              <p className="text-[10px] text-slate-400 font-bold">{s.email}</p>
+                            </div>
+                            <Check size={16} className="text-aerkm-gold" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Poste occupé *</label>
                   <input 
                     type="text" required
-                    value={formData.bureauPosition}
-                    onChange={e => setFormData({...formData, bureauPosition: e.target.value})}
+                    value={formData.position}
+                    onChange={e => setFormData({...formData, position: e.target.value})}
                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all"
                     placeholder="Ex: Président, Secrétaire Général, Commission Sociale..."
                   />
                 </div>
-                {!editingMember && (
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mot de passe provisoire *</label>
-                    <input 
-                      type="password" required
-                      value={formData.password}
-                      onChange={e => setFormData({...formData, password: e.target.value})}
-                      className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all"
-                      placeholder="Min. 6 caractères"
-                    />
-                  </div>
-                )}
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mandat *</label>
+                  <input 
+                    type="text" required
+                    value={formData.mandat}
+                    onChange={e => setFormData({...formData, mandat: e.target.value})}
+                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all"
+                    placeholder="Ex: 2024-2025"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ordre d'affichage</label>
+                  <input 
+                    type="number"
+                    value={formData.order}
+                    onChange={e => setFormData({...formData, order: parseInt(e.target.value)})}
+                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Biographie / Description</label>
+                  <textarea 
+                    value={formData.bio}
+                    onChange={e => setFormData({...formData, bio: e.target.value})}
+                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all h-32 resize-none"
+                    placeholder="Brève présentation du membre..."
+                  />
+                </div>
               </div>
 
               <div className="pt-4 flex items-center gap-4">
@@ -484,10 +503,16 @@ const GestionBureau: React.FC = () => {
               </div>
               <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">{viewingMember.prenom} {viewingMember.nom}</h2>
               <span className="inline-block px-4 py-1.5 bg-aerkm-gold/10 text-aerkm-brown rounded-full text-[10px] font-black uppercase tracking-widest border border-aerkm-gold/20 mt-2">
-                {viewingMember.bureauPosition}
+                {viewingMember.position}
               </span>
 
               <div className="mt-10 space-y-6 text-left">
+                {viewingMember.bio && (
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Biographie</p>
+                    <p className="text-xs font-medium text-slate-600 leading-relaxed italic">"{viewingMember.bio}"</p>
+                  </div>
+                )}
                 <div className="flex items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-aerkm-blue shadow-sm mr-4">
                     <Mail size={18} />
@@ -511,8 +536,8 @@ const GestionBureau: React.FC = () => {
                     <ShieldCheck size={18} />
                   </div>
                   <div>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Rôle Système</p>
-                    <p className="text-xs font-bold text-slate-700">{viewingMember.role}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Mandat</p>
+                    <p className="text-xs font-bold text-slate-700">{viewingMember.mandat}</p>
                   </div>
                 </div>
               </div>

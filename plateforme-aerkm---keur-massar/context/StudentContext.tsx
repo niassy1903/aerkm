@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Etudiant, Evenement, User, Notification, ActivityLog } from '../types';
+import { Etudiant, Evenement, User, Notification, ActivityLog, BureauMember } from '../types';
 
 interface SystemSettings {
   academicYear: string;
@@ -15,7 +15,7 @@ interface StudentContextType {
   students: Etudiant[];
   events: Evenement[];
   admins: User[];
-  bureauMembers: User[];
+  bureauMembers: BureauMember[];
   notifications: Notification[];
   logs: ActivityLog[];
   settings: SystemSettings | null;
@@ -31,6 +31,9 @@ interface StudentContextType {
   clearNotifications: () => Promise<void>;
   updateSettings: (newSettings: SystemSettings) => Promise<void>;
   updateBureauStatus: (userId: string, isBureau: boolean, position: string) => Promise<void>;
+  addBureauMember: (data: any) => Promise<boolean>;
+  updateBureauMember: (id: string, data: any) => Promise<void>;
+  deleteBureauMember: (id: string) => Promise<void>;
   fetchData: () => Promise<void>;
 }
 
@@ -42,7 +45,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [students, setStudents] = useState<Etudiant[]>([]);
   const [events, setEvents] = useState<Evenement[]>([]);
   const [admins, setAdmins] = useState<User[]>([]);
-  const [bureauMembers, setBureauMembers] = useState<User[]>([]);
+  const [bureauMembers, setBureauMembers] = useState<BureauMember[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -68,6 +71,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setEvents(eventsData);
       }
 
+      const resBureau = await fetch(`${API_BASE_URL}/bureau`);
+      if (resBureau.ok) {
+        const bureauData = await resBureau.json();
+        setBureauMembers(Array.isArray(bureauData) ? bureauData : []);
+      }
+
       // 2. Fetch protected data if logged in as ADMIN
       const savedUser = localStorage.getItem('aerkm_user');
       if (savedUser && savedUser !== "undefined" && savedUser !== "null") {
@@ -75,12 +84,11 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (user && user.role === 'ADMIN') {
           const h = getHeaders();
           
-          const [resS, resA, resN, resL, resB] = await Promise.all([
+          const [resS, resA, resN, resL] = await Promise.all([
             fetch(`${API_BASE_URL}/students`, { headers: h }),
             fetch(`${API_BASE_URL}/auth/admins`, { headers: h }),
             fetch(`${API_BASE_URL}/notifications`, { headers: h }),
-            fetch(`${API_BASE_URL}/logs`, { headers: h }),
-            fetch(`${API_BASE_URL}/auth/bureau`, { headers: h })
+            fetch(`${API_BASE_URL}/logs`, { headers: h })
           ]);
 
           if (resS.ok) {
@@ -89,7 +97,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
           
           if (resA.ok) {
-            const data = await resA.json();
+            const data = await resA.ok ? await resA.json() : [];
             setAdmins(Array.isArray(data) ? data : []);
           }
           
@@ -102,11 +110,6 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             const data = await resL.json();
             setLogs(Array.isArray(data) ? data : []);
           }
-          
-          if (resB.ok) {
-            const data = await resB.json();
-            setBureauMembers(Array.isArray(data) ? data : []);
-          }
         }
       }
       console.log("✅ Données actualisées avec succès");
@@ -118,6 +121,36 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => { 
     fetchData(); 
   }, []);
+
+  const addBureauMember = async (data: any) => {
+    const res = await fetch(`${API_BASE_URL}/bureau`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      await fetchData();
+      return true;
+    }
+    return false;
+  };
+
+  const updateBureauMember = async (id: string, data: any) => {
+    const res = await fetch(`${API_BASE_URL}/bureau/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (res.ok) await fetchData();
+  };
+
+  const deleteBureauMember = async (id: string) => {
+    const res = await fetch(`${API_BASE_URL}/bureau/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (res.ok) await fetchData();
+  };
 
   const updateBureauStatus = async (userId: string, isBureau: boolean, position: string) => {
     const res = await fetch(`${API_BASE_URL}/auth/admins/${userId}`, {
@@ -194,7 +227,9 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       updateStudent, deleteStudent,
       addAdmin, updateAdmin, deleteAdmin,
       markNotifAsRead, clearNotifications,
-      updateSettings, updateBureauStatus, fetchData
+      updateSettings, updateBureauStatus, 
+      addBureauMember, updateBureauMember, deleteBureauMember,
+      fetchData
     }}>
       {children}
     </StudentContext.Provider>
