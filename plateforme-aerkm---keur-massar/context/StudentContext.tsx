@@ -83,7 +83,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             fetch(`${API_BASE_URL}/auth/admins`, { headers: h }),
             fetch(`${API_BASE_URL}/notifications`, { headers: h }),
             fetch(`${API_BASE_URL}/logs`, { headers: h }),
-            fetch(`${API_BASE_URL}/auth/bureau`, { headers: h })
+            fetch(`${API_BASE_URL}/bureau`, { headers: h })
           ]);
 
           if (resS.ok) {
