@@ -9,6 +9,8 @@ export interface User {
   nom: string;
   prenom: string;
   password?: string;
+  isBureau?: boolean;
+  bureauPosition?: string;
   imageUrl?: string;
   telephone?: string;
 }
@@ -65,22 +67,6 @@ export interface ActivityLog {
   details: string;
   date: string;
   adminId: string;
-}
-
-export interface BureauMember extends User {
-  position: string;
-  mandat: string;
-  order: number;
-  isActive: boolean;
-  bio?: string;
-}
-
-export interface BureauMemberInput {
-  studentId: string;
-  position: string;
-  mandat: string;
-  order: number;
-  bio: string;
 }
 
 export interface AuthState {

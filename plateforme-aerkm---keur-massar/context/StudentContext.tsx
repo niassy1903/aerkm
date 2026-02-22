@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Etudiant, Evenement, User, Notification, ActivityLog, BureauMember, BureauMemberInput } from '../types';
+import { Etudiant, Evenement, User, Notification, ActivityLog } from '../types';
 
 interface SystemSettings {
   academicYear: string;
@@ -15,7 +15,7 @@ interface StudentContextType {
   students: Etudiant[];
   events: Evenement[];
   admins: User[];
-  bureauMembers: BureauMember[];
+  bureauMembers: User[];
   notifications: Notification[];
   logs: ActivityLog[];
   settings: SystemSettings | null;
@@ -27,9 +27,6 @@ interface StudentContextType {
   addAdmin: (admin: any) => Promise<boolean>;
   updateAdmin: (admin: any) => Promise<void>;
   deleteAdmin: (id: string) => Promise<void>;
-  addBureauMember: (member: BureauMemberInput) => Promise<boolean>;
-  updateBureauMember: (member: BureauMember) => Promise<void>;
-  deleteBureauMember: (id: string) => Promise<void>;
   markNotifAsRead: (id: string) => Promise<void>;
   clearNotifications: () => Promise<void>;
   updateSettings: (newSettings: SystemSettings) => Promise<void>;
@@ -45,7 +42,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [students, setStudents] = useState<Etudiant[]>([]);
   const [events, setEvents] = useState<Evenement[]>([]);
   const [admins, setAdmins] = useState<User[]>([]);
-  const [bureauMembers, setBureauMembers] = useState<BureauMember[]>([]);
+  const [bureauMembers, setBureauMembers] = useState<User[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -83,7 +80,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             fetch(`${API_BASE_URL}/auth/admins`, { headers: h }),
             fetch(`${API_BASE_URL}/notifications`, { headers: h }),
             fetch(`${API_BASE_URL}/logs`, { headers: h }),
-            fetch(`${API_BASE_URL}/bureau/admin`, { headers: h })
+            fetch(`${API_BASE_URL}/auth/bureau`, { headers: h })
           ]);
 
           if (resS.ok) {
@@ -172,22 +169,6 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (res.ok) await fetchData();
   };
 
-  const addBureauMember = async (member: BureauMemberInput) => {
-    const res = await fetch(`${API_BASE_URL}/bureau`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(member) });
-    if (res.ok) { await fetchData(); return true; }
-    return false;
-  };
-
-  const updateBureauMember = async (member: BureauMember) => {
-    const res = await fetch(`${API_BASE_URL}/bureau/${member._id || member.id}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(member) });
-    if (res.ok) await fetchData();
-  };
-
-  const deleteBureauMember = async (id: string) => {
-    const res = await fetch(`${API_BASE_URL}/bureau/${id}`, { method: 'DELETE', headers: getHeaders() });
-    if (res.ok) await fetchData();
-  };
-
   const markNotifAsRead = async (id: string) => {
     const res = await fetch(`${API_BASE_URL}/notifications/${id}`, { method: 'PUT', headers: getHeaders() });
     if (res.ok) await fetchData();
@@ -212,7 +193,6 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       addEvent, updateEvent, deleteEvent, 
       updateStudent, deleteStudent,
       addAdmin, updateAdmin, deleteAdmin,
-      addBureauMember, updateBureauMember, deleteBureauMember,
       markNotifAsRead, clearNotifications,
       updateSettings, updateBureauStatus, fetchData
     }}>

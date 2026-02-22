@@ -23,8 +23,6 @@ const userSchema = new mongoose.Schema({
   nom: { type: String, required: true },
   prenom: { type: String, required: true },
 
-  imageUrl: { type: String, default: '' },
-
   /* =====================
      SECURITY & RECOVERY
   ===================== */

@@ -15,7 +15,9 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = 'https://aerkm.onrender.com/api';
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api'
+  : 'https://aerkm.onrender.com/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>({
@@ -25,23 +27,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   useEffect(() => {
-    try {
-      const token = localStorage.getItem('aerkm_token');
-      const savedUser = localStorage.getItem('aerkm_user');
-      
-      if (token && savedUser && savedUser !== "undefined" && savedUser !== "null") {
-        setState({
-          user: JSON.parse(savedUser),
-          isAuthenticated: true,
-          loading: false,
-        });
-      } else {
-        setState(prev => ({ ...prev, loading: false }));
-      }
-    } catch (err) {
-      console.error("Auth initialization error:", err);
-      localStorage.removeItem('aerkm_user');
-      localStorage.removeItem('aerkm_token');
+    const token = localStorage.getItem('aerkm_token');
+    const savedUser = localStorage.getItem('aerkm_user');
+    if (token && savedUser) {
+      setState({
+        user: JSON.parse(savedUser),
+        isAuthenticated: true,
+        loading: false,
+      });
+    } else {
       setState(prev => ({ ...prev, loading: false }));
     }
   }, []);
@@ -55,18 +49,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (!response.ok) return false;
       const data = await response.json();
-      
-      if (data.token && data.user) {
-        localStorage.setItem('aerkm_token', data.token);
-        localStorage.setItem('aerkm_user', JSON.stringify(data.user));
-        setState({ user: data.user, isAuthenticated: true, loading: false });
-        return true;
-      }
-      return false;
-    } catch (err) { 
-      console.error("Login error:", err);
-      return false; 
-    }
+      localStorage.setItem('aerkm_token', data.token);
+      localStorage.setItem('aerkm_user', JSON.stringify(data.user));
+      setState({ user: data.user, isAuthenticated: true, loading: false });
+      return true;
+    } catch (err) { return false; }
   };
 
   const logout = () => {
@@ -91,24 +78,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!response.ok) return { success: false };
 
-      if (result.token && result.user) {
-        localStorage.setItem('aerkm_token', result.token);
-        localStorage.setItem('aerkm_user', JSON.stringify(result.user));
-        setState({ user: result.user, isAuthenticated: true, loading: false });
-        return { success: true };
-      }
-      return { success: false };
+      localStorage.setItem('aerkm_token', result.token);
+      localStorage.setItem('aerkm_user', JSON.stringify(result.user));
+      setState({ user: result.user, isAuthenticated: true, loading: false });
+      return { success: true };
     } catch (err) {
-      console.error("Registration error:", err);
       return { success: false };
     }
   };
 
   const updateSessionUser = (userData: User) => {
-    if (userData) {
-      localStorage.setItem('aerkm_user', JSON.stringify(userData));
-      setState(prev => ({ ...prev, user: userData }));
-    }
+    localStorage.setItem('aerkm_user', JSON.stringify(userData));
+    setState(prev => ({ ...prev, user: userData }));
   };
 
   return (

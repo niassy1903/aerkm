@@ -11,7 +11,6 @@ import logsRoutes from './routes/logs.js';
 import notifRoutes from './routes/notifications.js';
 import contactRoutes from './routes/contact.js';
 import Settings from './routes/settings.js';
-import BureauMember from './models/BureauMember.js';
 
 dotenv.config();
 
@@ -51,7 +50,6 @@ app.use('/api/logs', logsRoutes);
 app.use('/api/notifications', notifRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/settings', Settings);
-app.use('/api/bureau', BureauMember);
 
 /* 🗄️ MongoDB */
 mongoose.connect(process.env.MONGO_URI)

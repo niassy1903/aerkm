@@ -49,7 +49,7 @@ router.post('/admins', async (req, res) => {
       password: hashedPassword,
       prenom,
       nom,
-      role: 'ADMIN'
+      role: 'ADMIN',
     });
 
     await newAdmin.save();
