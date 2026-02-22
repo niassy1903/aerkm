@@ -131,12 +131,11 @@ const GestionBureau: React.FC = () => {
           return;
         }
         const success = await addBureauMember({
-          ...selectedStudent,
+          studentId: selectedStudentId,
           position: formData.position,
           mandat: formData.mandat,
           order: formData.order,
-          bio: formData.bio,
-          isActive: true
+          bio: formData.bio
         });
         if (!success) {
           setError("Erreur lors de l'ajout. Cet étudiant est peut-être déjà membre.");

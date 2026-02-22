@@ -75,6 +75,14 @@ export interface BureauMember extends User {
   bio?: string;
 }
 
+export interface BureauMemberInput {
+  studentId: string;
+  position: string;
+  mandat: string;
+  order: number;
+  bio: string;
+}
+
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
