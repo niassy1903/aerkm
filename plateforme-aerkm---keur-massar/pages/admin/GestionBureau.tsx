@@ -22,6 +22,74 @@ import {
 } from 'lucide-react';
 import { User as UserType } from '../../types';
 
+const BUREAU_POSITIONS: Record<string, Record<string, string>> = {
+  "Bureau Exécutif": {
+    "Président(e)": "Représente l'amicale, coordonne les activités et préside les réunions du bureau exécutif.",
+    "Vice-Président(e)": "Assiste le président dans ses fonctions et le remplace en cas d'empêchement.",
+    "Secrétaire Général(e)": "Responsable de l'administration, de la rédaction des procès-verbaux et de la correspondance.",
+    "Secrétaire Général(e) Adjoint(e)": "Assiste le secrétaire général dans les tâches administratives.",
+    "Trésorier(ère) Général(e)": "Gère les finances de l'amicale, tient la comptabilité et prépare les rapports financiers.",
+    "Trésorier(ère) Général(e) Adjoint(e)": "Assiste le trésorier dans la gestion financière."
+  },
+  "Commission Organisation": {
+    "Président(e) de la Commission Organisation": "Planifie et supervise l'organisation logistique de tous les événements de l'amicale.",
+    "1er Adjoint(e)": "Assiste le président de commission dans la coordination logistique.",
+    "2e Adjoint(e)": "Soutien opérationnel pour l'organisation des activités.",
+    "3e Adjoint(e)": "Soutien opérationnel pour l'organisation des activités.",
+    "4e Adjoint(e)": "Soutien opérationnel pour l'organisation des activités."
+  },
+  "Commission Pédagogique": {
+    "Président(e) Commission Pédagogique": "Coordonne les activités de soutien académique et les relations avec l'administration universitaire.",
+    "Vice-Président(e)": "Assiste à la coordination des projets pédagogiques.",
+    "1er Adjoint(e)": "Soutien à l'organisation des tutorats et séances de révision.",
+    "2e Adjoint(e)": "Soutien à l'organisation des tutorats et séances de révision.",
+    "Chargé(e) des Relations Académiques": "Assure la liaison entre les étudiants et le corps professoral.",
+    "Chargé(e) du Suivi des Cours et Examens": "Veille à la disponibilité des supports de cours et au bon déroulement des examens."
+  },
+  "Commission Sociale": {
+    "Président(e) Commission Sociale": "Pilote les actions d'entraide, de solidarité et d'intégration des membres.",
+    "Vice-Président(e)": "Assiste dans la mise en œuvre des projets sociaux.",
+    "1er Adjoint(e)": "Soutien aux activités sociales et caritatives.",
+    "2e Adjoint(e)": "Soutien aux activités sociales et caritatives.",
+    "Chargé(e) de l’Assistance Sociale": "Identifie et accompagne les étudiants en difficulté.",
+    "Chargé(e) des Activités Communautaires": "Organise des moments de partage et de cohésion sociale."
+  },
+  "Commission Communication": {
+    "Président(e) Commission Communication": "Définit la stratégie de communication et veille à l'image de marque de l'amicale.",
+    "Vice-Président(e)": "Assiste dans la gestion des canaux de communication.",
+    "Chargé(e) de Communication Digitale": "Gère le site web et les outils numériques de l'amicale.",
+    "Chargé(e) des Réseaux Sociaux": "Anime les pages sociales (Facebook, Instagram, WhatsApp, etc.).",
+    "Chargé(e) de Presse et Relations Publiques": "Assure les relations avec les médias et les partenaires externes.",
+    "Graphiste / Designer": "Crée les supports visuels (affiches, logos, vidéos) pour les activités."
+  },
+  "Commission Santé": {
+    "Président(e) Commission Santé": "Organise les campagnes de santé et gère les urgences médicales des étudiants.",
+    "Vice-Président(e)": "Assiste dans la coordination des actions de santé.",
+    "Chargé(e) de Prévention": "Sensibilise sur les risques sanitaires et les bonnes pratiques.",
+    "Chargé(e) des Campagnes de Sensibilisation": "Planifie les journées de don de sang et de dépistage.",
+    "Responsable des Urgences Étudiantes": "Point focal pour l'assistance médicale rapide."
+  },
+  "Commission Sport": {
+    "Président(e) Commission Sport": "Promeut la pratique sportive et organise les tournois inter-étudiants.",
+    "Vice-Président(e)": "Assiste dans la gestion des activités sportives.",
+    "1er Adjoint(e)": "Soutien à l'organisation des compétitions.",
+    "2e Adjoint(e)": "Soutien à l'organisation des compétitions.",
+    "Responsable Football": "Gère l'équipe de football de l'amicale.",
+    "Responsable Basketball": "Gère l'équipe de basketball de l'amicale.",
+    "Responsable Athlétisme": "Coordonne les activités d'athlétisme.",
+    "Responsable Événements Sportifs": "Logistique spécifique aux rencontres sportives."
+  },
+  "Autres Postes": {
+    "Commissaire aux Comptes": "Vérifie la régularité des comptes et la gestion financière du trésorier.",
+    "Conseiller(e) Spécial(e)": "Apporte son expertise et ses conseils au bureau exécutif.",
+    "Porte-Parole": "Porte la parole officielle de l'amicale lors des événements publics.",
+    "Responsable Partenariats": "Recherche et gère les relations avec les sponsors et partenaires.",
+    "Responsable Culture": "Organise les journées culturelles et les activités artistiques.",
+    "Responsable Innovation / Numérique": "Propose des solutions technologiques pour moderniser l'amicale.",
+    "Responsable Logistique": "Gère le matériel et les équipements de l'amicale."
+  }
+};
+
 const GestionBureau: React.FC = () => {
   const { students, bureauMembers, updateBureauStatus } = useData();
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,6 +115,21 @@ const GestionBureau: React.FC = () => {
     bureauOrder: 0,
     bureauBio: ''
   });
+
+  const handlePositionChange = (pos: string) => {
+    let description = "";
+    for (const category in BUREAU_POSITIONS) {
+      if (BUREAU_POSITIONS[category][pos]) {
+        description = BUREAU_POSITIONS[category][pos];
+        break;
+      }
+    }
+    setFormData({
+      ...formData,
+      bureauPosition: pos,
+      bureauBio: description || formData.bureauBio
+    });
+  };
 
   const filteredStudents = useMemo(() => {
     if (!studentSearch) return [];
@@ -412,13 +495,21 @@ const GestionBureau: React.FC = () => {
 
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Poste occupé *</label>
-                  <input 
-                    type="text" required
+                  <select 
+                    required
                     value={formData.bureauPosition}
-                    onChange={e => setFormData({...formData, bureauPosition: e.target.value})}
-                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all"
-                    placeholder="Ex: Président, Secrétaire Général, Commission Sociale..."
-                  />
+                    onChange={e => handlePositionChange(e.target.value)}
+                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-aerkm-blue transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled>Sélectionner un poste...</option>
+                    {Object.entries(BUREAU_POSITIONS).map(([category, positions]) => (
+                      <optgroup key={category} label={category}>
+                        {Object.keys(positions).map(pos => (
+                          <option key={pos} value={pos}>{pos}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-2">

@@ -38,7 +38,7 @@ const Bureau: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { label: "Membres Actifs", value: bureauMembers.length.toString(), icon: <Users />, color: "bg-aerkm-brown" },
-              { label: "Mandat en cours", value: "2024-2025", icon: <Star />, color: "bg-aerkm-blue" },
+              { label: "Mandat en cours", value: "2025-2026", icon: <Star />, color: "bg-aerkm-blue" },
               { label: "Commissions", value: "Actives", icon: <Sparkles />, color: "bg-aerkm-gold" }
             ].map((stat, i) => (
               <div key={i} className="bg-white p-8 rounded-[2.5rem] shadow-2xl shadow-slate-200 flex items-center justify-between border border-slate-50">
